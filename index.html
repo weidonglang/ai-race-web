@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Race – 首页</title>
+  <link rel="stylesheet" href="/node_modules/swiper/swiper-bundle.min.css">
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <header>
+    <a href="index.html" style="font-weight:700">AI Race</a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="replays.html">回放库</a>
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+  </header>
+
+  <main class="container">
+    <h1>三维场地编辑 + 双智能体竞速学习</h1>
+
+    <div class="swiper">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide">编辑器：拖拽障碍/起点/终点</div>
+        <div class="swiper-slide">寻路：NavMesh + A*</div>
+        <div class="swiper-slide">学习：越跑越快、越稳</div>
+      </div>
+      <div class="swiper-pagination"></div>
+      <div class="swiper-button-prev"></div>
+      <div class="swiper-button-next"></div>
+    </div>
+  </main>
+
+  <footer class="footer">© 2025 AI Race Demo</footer>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
