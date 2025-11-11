@@ -1,46 +1,53 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>AI Race – 首页</title>
-  <link rel="stylesheet" href="/node_modules/swiper/swiper-bundle.min.css">
-  <link rel="stylesheet" href="/src/style.css">
-</head>
-<body>
-  <header>
-    <a href="index.html" style="font-weight:700">AI Race</a>
-    <ul class="nav">
-      <li><a href="editor.html">编辑器</a></li>
-      <li><a href="lab.html">AI 实验室</a></li>
-      <li><a href="dashboard.html">训练看板</a></li>
-      <li>
-        <a href="#">更多 ▾</a>
-        <div class="dropdown">
-          <a href="replays.html">回放库</a>
-          <a href="help.html">帮助/原理</a>
-          <a href="about.html">关于</a>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>AI Race – 首页</title>
+    <link rel="icon" href="data:,">
+    <!-- ✅ 全站样式 -->
+    <link rel="stylesheet" href="/src/style.css">
+    <!-- ❌ 不需要、且线上会 404：<link rel="stylesheet" href="/node_modules/swiper/swiper-bundle.min.css"> -->
+  </head>
+  <body>
+    <header>
+      <a href="index.html" style="font-weight:700">AI Race</a>
+      <ul class="nav">
+        <li><a href="editor.html">编辑器</a></li>
+        <li><a href="lab.html">AI 实验室</a></li>
+        <li><a href="dashboard.html">训练看板</a></li>
+        <li>
+          <a href="#">更多 ▾</a>
+          <div class="dropdown">
+            <a href="replays.html">回放库</a>
+            <a href="help.html">帮助/原理</a>
+            <a href="about.html">关于</a>
+          </div>
+        </li>
+      </ul>
+    </header>
+
+    <main class="container">
+      <h1>三维场地编辑 + 双智能体竞速学习</h1>
+
+      <!-- 首页轮播（Swiper 的 CSS 已在 /src/main.js 里 import 自动引入） -->
+      <div class="swiper">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide">编辑器：拖拽障碍/起终点</div>
+          <div class="swiper-slide">寻路：NavMesh + A*</div>
+          <div class="swiper-slide">学习：越跑越快、越稳</div>
         </div>
-      </li>
-    </ul>
-  </header>
-
-  <main class="container">
-    <h1>三维场地编辑 + 双智能体竞速学习</h1>
-
-    <div class="swiper">
-      <div class="swiper-wrapper">
-        <div class="swiper-slide">编辑器：拖拽障碍/起点/终点</div>
-        <div class="swiper-slide">寻路：NavMesh + A*</div>
-        <div class="swiper-slide">学习：越跑越快、越稳</div>
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
       </div>
-      <div class="swiper-pagination"></div>
-      <div class="swiper-button-prev"></div>
-      <div class="swiper-button-next"></div>
-    </div>
-  </main>
 
-  <footer class="footer">© 2025 AI Race Demo</footer>
-  <script type="module" src="/src/main.js"></script>
-</body>
+      <p style="margin:18px 0;color:#9db0c6">Day1/Day2 完成：站点结构、导航/二级菜单、轮播、表单校验、编辑器 + NavMesh 烘焙与寻路。</p>
+    </main>
+
+    <footer class="footer">© 2025 AI Race Demo</footer>
+
+    <!-- 入口脚本：初始化 Swiper -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
 </html>
