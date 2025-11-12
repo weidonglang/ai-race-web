@@ -1,24 +1,39 @@
-<!doctype html><html lang="zh-CN"><head>
-<meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Editor</title><link rel="stylesheet" href="/src/style.css"></head>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>训练看板 · AI Race</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
 <body>
-  <!-- 复制同样的 header 导航 -->
-  <header>
-    <a href="index.html" style="font-weight:700">AI Race</a>
-    <ul class="nav">
-      <li><a href="editor.html">编辑器</a></li>
-      <li><a href="lab.html">AI 实验室</a></li>
-      <li><a href="dashboard.html">训练看板</a></li>
-      <li>
-        <a href="#">更多 ▾</a>
-        <div class="dropdown">
-          <a href="replays.html">回放库</a>
-          <a href="help.html">帮助/原理</a>
-          <a href="about.html">关于</a>
-        </div>
-      </li>
-    </ul>
-  </header>
-  <main class="container"><h1>编辑器（占位）</h1></main>
-  <footer class="footer">© 2025 AI Race Demo</footer>
-</body></html>
+<header>
+  <a href="index.html" style="font-weight:700">AI Race</a>
+  <ul class="nav">
+    <li><a href="editor.html">编辑器</a></li>
+    <li><a href="lab.html">AI 实验室</a></li>
+    <li><a href="dashboard.html">训练看板</a></li>
+    <li>
+      <a href="#">更多 ▾</a>
+      <div class="dropdown">
+        <a href="replays.html">回放库</a>
+        <a href="help.html">帮助/原理</a>
+        <a href="about.html">关于</a>
+      </div>
+    </li>
+  </ul>
+</header>
+
+<main class="container">
+  <h1>训练看板</h1>
+  <p style="color:#9db0c6">在“编辑器”页进行<b>竞速</b>或<b>训练</b>后，本页会从 <code>localStorage</code> 读取历史绘制曲线。</p>
+  <canvas id="chart" height="120"></canvas>
+  <div id="stats"></div>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<!-- Chart.js 官方推荐可用 CDN 引入，也可 npm 安装后打包使用。:contentReference[oaicite:7]{index=7} -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="/src/dashboard.js"></script>
+</body>
+</html>

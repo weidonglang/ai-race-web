@@ -4,12 +4,21 @@
   <meta charset="utf-8" />
   <title>NavMesh 编辑器 · Day2</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="data:,">
   <link rel="stylesheet" href="/src/style.css" />
+  <style>
+    .topbar{display:flex;gap:16px;align-items:center;justify-content:space-between;
+      padding:10px 16px;background:#121720;border-bottom:1px solid #1c2533;}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+    .toolbar button{padding:6px 10px;border:1px solid #2c3342;background:#1a2130;
+      color:#dce5f0;border-radius:8px;cursor:pointer}
+    .toolbar button:hover{background:#233049}
+  </style>
 </head>
 <body>
-  <header style="display:flex;align-items:center;gap:16px;padding:12px 20px;background:#121720;border-bottom:1px solid #1c2533;">
-    <h1 style="margin:0;font-size:18px;">NavMesh 编辑器</h1>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
+  <header class="topbar">
+    <div style="font-weight:700">NavMesh 编辑器</div>
+    <div class="toolbar">
       <button id="btnAddBox">+ 障碍</button>
       <button id="btnSetStart">设置起点</button>
       <button id="btnSetEnd">设置终点</button>
@@ -21,7 +30,7 @@
 
   <main id="viewport" style="position:relative;height:calc(100vh - 64px);"></main>
 
-  <!-- ✅ 入口改为 src 下 -->
+  <!-- 入口脚本（注意：在 src 目录下） -->
   <script type="module" src="/src/editor.js"></script>
 </body>
 </html>

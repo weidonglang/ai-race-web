@@ -1,16 +1,12 @@
 // src/editor.js
-// Three.js + recast-navigation-js（Solo NavMesh 烘焙 + 一键寻路）
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'   // 官方路径 :contentReference[oaicite:2]{index=2}
-
-import { init, NavMeshQuery } from '@recast-navigation/core'
-import { generateSoloNavMesh } from '@recast-navigation/generators'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { init as initRecast, NavMeshQuery, statusToReadableString } from 'recast-navigation'
+import { generateSoloNavMesh } from 'recast-navigation/generators'
 import { NavMeshHelper } from '@recast-navigation/three'
-// ↑ 官方文档：init / generateSoloNavMesh / NavMeshQuery / NavMeshHelper 的用法与参数说明。:contentReference[oaicite:3]{index=3}
 
+// ---------- 基础 three.js ----------
 const root = document.getElementById('viewport')
-
-// === 基础 three.js 场景 ===
 const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.setSize(root.clientWidth, root.clientHeight)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
@@ -25,50 +21,53 @@ camera.position.set(10, 12, 18)
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 
-// 光照
-scene.add(new THREE.HemisphereLight(0xffffff, 0x222233, 0.7))
-const dir = new THREE.DirectionalLight(0xffffff, 0.8); dir.position.set(6, 10, 6); scene.add(dir)
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.7)
+scene.add(hemi)
+const dir = new THREE.DirectionalLight(0xffffff, 0.8)
+dir.position.set(6, 10, 6)
+scene.add(dir)
 
 // 地面 + 网格
 const FLOOR_SIZE = 30
 const floorGeo = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE, 1, 1)
 floorGeo.rotateX(-Math.PI / 2)
-const floor = new THREE.Mesh(
-  floorGeo,
-  new THREE.MeshStandardMaterial({ color: 0x2b2f3a, metalness: 0.0, roughness: 1.0 })
-)
+const floorMat = new THREE.MeshStandardMaterial({ color: 0x2b2f3a, metalness: 0.0, roughness: 1.0 })
+const floor = new THREE.Mesh(floorGeo, floorMat)
 floor.receiveShadow = true
 floor.name = 'Floor'
 scene.add(floor)
+
 const grid = new THREE.GridHelper(FLOOR_SIZE, FLOOR_SIZE, 0x444a57, 0x303543)
 grid.position.y = 0.01
 scene.add(grid)
 
-// 交互状态
+// ---------- 交互与状态 ----------
 const raycaster = new THREE.Raycaster()
 const mouseNDC = new THREE.Vector2()
-let placingMode = null         // 'box' | 'start' | 'end'
-const obstacles = []           // THREE.Mesh[]
-let startMarker = null         // THREE.Mesh
-let endMarker = null           // THREE.Mesh
-let navQuery = null            // NavMeshQuery
-let navHelper = null           // NavMeshHelper
-let pathLine = null            // THREE.Line
+let placingMode = null        // 'box' | 'start' | 'end' | null
+const obstacles = []          // THREE.Mesh[]
+let startMarker = null        // THREE.Mesh
+let endMarker = null          // THREE.Mesh
+let navQuery = null           // NavMeshQuery
+let navHelper = null          // NavMeshHelper
+let pathLine = null           // THREE.Line
+let downPos = null            // pointerdown 位置，用于区分拖动/点击
 
+const updateCursor = () => {
+  renderer.domElement.style.cursor = placingMode ? 'crosshair' : 'default'
+}
+
+// 标记/障碍
 function makeMarker(color) {
-  const m = new THREE.Mesh(
+  return new THREE.Mesh(
     new THREE.SphereGeometry(0.25, 24, 16),
     new THREE.MeshStandardMaterial({ color })
   )
-  m.castShadow = true
-  return m
 }
-
 function addObstacleAt(point) {
-  const box = new THREE.Mesh(
-    new THREE.BoxGeometry(2, 2, 2),
-    new THREE.MeshStandardMaterial({ color: 0x8b5cf6, metalness: 0.2, roughness: 0.8 })
-  )
+  const geo = new THREE.BoxGeometry(2, 2, 2)
+  const mat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, metalness: 0.2, roughness: 0.8 })
+  const box = new THREE.Mesh(geo, mat)
   box.position.copy(point).y = 1.0
   box.castShadow = true
   box.receiveShadow = true
@@ -77,6 +76,7 @@ function addObstacleAt(point) {
   obstacles.push(box)
 }
 
+// 拾取地面
 function pickOnFloor(ev) {
   const rect = renderer.domElement.getBoundingClientRect()
   mouseNDC.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1
@@ -86,21 +86,7 @@ function pickOnFloor(ev) {
   return hit ? hit.point : null
 }
 
-renderer.domElement.addEventListener('pointerdown', (ev) => {
-  const p = pickOnFloor(ev)
-  if (!p) return
-  if (placingMode === 'box') {
-    addObstacleAt(p)
-  } else if (placingMode === 'start') {
-    if (!startMarker) { startMarker = makeMarker(0x22cc88); scene.add(startMarker) }
-    startMarker.position.copy(p).y = 0.25
-  } else if (placingMode === 'end') {
-    if (!endMarker) { endMarker = makeMarker(0xff5555); scene.add(endMarker) }
-    endMarker.position.copy(p).y = 0.25
-  }
-})
-
-// 将地面+障碍转为 positions / indices（右手坐标 & CCW）
+// ---------- 输入几何转换（地面 + 障碍） ----------
 function getPositionsAndIndicesFromMeshes(meshes) {
   const positions = []
   const indices = []
@@ -111,11 +97,10 @@ function getPositionsAndIndicesFromMeshes(meshes) {
     geom.applyMatrix4(mesh.matrixWorld)
     const nonIdx = geom.index ? geom.toNonIndexed() : geom
     const arr = nonIdx.getAttribute('position').array
-    // push 顶点
+
     for (let i = 0; i < arr.length; i += 3) {
-      positions.push(arr[i + 0], arr[i + 1], arr[i + 2])
+      positions.push(arr[i], arr[i + 1], arr[i + 2])
     }
-    // 顺序索引（每 3 个点一个三角形）
     const triCount = arr.length / 9
     for (let t = 0; t < triCount; t++) {
       indices.push(indexOffset + t * 3 + 0)
@@ -127,51 +112,51 @@ function getPositionsAndIndicesFromMeshes(meshes) {
   return [positions, indices]
 }
 
-// NavMesh 烘焙
+// ---------- NavMesh 烘焙 ----------
 async function bakeNavMesh() {
   if (navHelper) { scene.remove(navHelper); navHelper = null }
   if (pathLine) { scene.remove(pathLine); pathLine = null }
 
-  const [positions, indices] = getPositionsAndIndicesFromMeshes([floor, ...obstacles])
+  const inputMeshes = [floor, ...obstacles]   // ✅ 注意是 ...obstacles
+  const [positions, indices] = getPositionsAndIndicesFromMeshes(inputMeshes)
 
-  // 初始化 recast wasm（多次调用也会秒返回）
-  await init() // :contentReference[oaicite:4]{index=4}
+  await initRecast() // wasm 初始化（幂等）
 
-  // 常用配置（可按需调整）
   const cfg = {
-    cs: 0.25,              // cell size
-    ch: 0.2,               // cell height
-    walkableHeight: 1.8,   // 代理身高
-    walkableRadius: 0.4,   // 代理半径
-    walkableClimb: 0.4,    // 可跨越台阶
-    walkableSlopeAngle: 45 // 最大坡度
+    cs: 0.25, ch: 0.2,
+    walkableHeight: 1.8,
+    walkableRadius: 0.4,
+    walkableClimb: 0.4,
+    walkableSlopeAngle: 45
   }
 
-  const { success, navMesh } = generateSoloNavMesh(positions, indices, cfg) // :contentReference[oaicite:5]{index=5}
+  const { success, navMesh } = generateSoloNavMesh(positions, indices, cfg)
   if (!success) {
     alert('NavMesh 生成失败，请调整参数或几何！')
     return
   }
 
-  // 创建查询器 & 可视化
-  navQuery = new NavMeshQuery(navMesh) // 有 computePath / findNearestPoly 等方法 :contentReference[oaicite:6]{index=6}
+  navQuery = new NavMeshQuery(navMesh)
+
   navHelper = new NavMeshHelper(navMesh)
   scene.add(navHelper)
 }
 
-// 一键寻路（内部完成最近多边形+走廊+拉直）
+// ---------- 寻路（高层 API：computePath） ----------
 function findPathAndDraw() {
-  if (!navQuery || !startMarker || !endMarker) return
+  if (!navQuery || !startMarker || !endMarker) {
+    alert('请先设置起点/终点并烘焙 NavMesh')
+    return
+  }
 
   const { success, path, error } = navQuery.computePath(
     { x: startMarker.position.x, y: startMarker.position.y, z: startMarker.position.z },
-    { x: endMarker.position.x,   y: endMarker.position.y,   z: endMarker.position.z },
-    // 也可传 { halfExtents: {x:2,y:4,z:2} } 自定义搜索范围；不传则用默认。:contentReference[oaicite:7]{index=7}
+    { x: endMarker.position.x,   y: endMarker.position.y,   z: endMarker.position.z }
   )
 
   if (!success || !path || path.length < 2) {
     console.warn('computePath 失败：', error)
-    alert('寻路失败：起点或终点可能不在可走区域附近')
+    alert('寻路失败：起点/终点可能不在可走区域附近，或区域不连通')
     return
   }
 
@@ -183,14 +168,65 @@ function findPathAndDraw() {
   scene.add(pathLine)
 }
 
-// 绑定 UI
-document.getElementById('btnAddBox').onclick  = () => placingMode = 'box'
-document.getElementById('btnSetStart').onclick = () => placingMode = 'start'
-document.getElementById('btnSetEnd').onclick   = () => placingMode = 'end'
-document.getElementById('btnBake').onclick     = () => bakeNavMesh()
-document.getElementById('btnFind').onclick     = () => findPathAndDraw()
-document.getElementById('btnClear').onclick    = () => {
+// ---------- 事件：放置逻辑（一次性起/终点，拖动不误触） ----------
+renderer.domElement.addEventListener('pointerdown', (ev) => {
+  downPos = { x: ev.clientX, y: ev.clientY }
+})
+
+renderer.domElement.addEventListener('click', (ev) => {
+  if (ev.button !== 0) return
+  if (!placingMode) return
+
+  if (downPos) {
+    const dx = ev.clientX - downPos.x
+    const dy = ev.clientY - downPos.y
+    if (Math.hypot(dx, dy) > 5) return // 视为拖动，不放置
+  }
+
+  const p = pickOnFloor(ev)
+  if (!p) return
+
+  if (placingMode === 'box') {
+    addObstacleAt(p) // 盒子可连续放置；再次点击按钮可退出
+  } else if (placingMode === 'start') {
+    if (!startMarker) { startMarker = makeMarker(0x22cc88); scene.add(startMarker) }
+    startMarker.position.copy(p).y = 0.25
+    placingMode = null
+    updateCursor()
+  } else if (placingMode === 'end') {
+    if (!endMarker) { endMarker = makeMarker(0xff5555); scene.add(endMarker) }
+    endMarker.position.copy(p).y = 0.25
+    placingMode = null
+    updateCursor()
+  }
+})
+
+// Esc 取消放置
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    placingMode = null
+    updateCursor()
+  }
+})
+
+// ---------- UI 绑定（按钮切换模式 + 光标反馈） ----------
+document.getElementById('btnAddBox').onclick = () => {
+  placingMode = (placingMode === 'box') ? null : 'box'
+  updateCursor()
+}
+document.getElementById('btnSetStart').onclick = () => {
+  placingMode = (placingMode === 'start') ? null : 'start'
+  updateCursor()
+}
+document.getElementById('btnSetEnd').onclick = () => {
+  placingMode = (placingMode === 'end') ? null : 'end'
+  updateCursor()
+}
+document.getElementById('btnBake').onclick = () => bakeNavMesh()
+document.getElementById('btnFind').onclick = () => findPathAndDraw()
+document.getElementById('btnClear').onclick = () => {
   placingMode = null
+  updateCursor()
   obstacles.forEach(m => scene.remove(m)); obstacles.length = 0
   if (startMarker) scene.remove(startMarker), startMarker = null
   if (endMarker) scene.remove(endMarker), endMarker = null
@@ -199,7 +235,7 @@ document.getElementById('btnClear').onclick    = () => {
   navQuery = null
 }
 
-// 渲染循环与自适应
+// ---------- 渲染循环 ----------
 function onResize() {
   const w = root.clientWidth, h = root.clientHeight
   camera.aspect = w / h
@@ -208,7 +244,7 @@ function onResize() {
 }
 window.addEventListener('resize', onResize)
 
-;(function animate(){
+;(function animate() {
   requestAnimationFrame(animate)
   controls.update()
   renderer.render(scene, camera)
