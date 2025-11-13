@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RL 迷宫学习 Demo · AI Race</title>
+  <link rel="icon" href="data:,">
+  <!-- 全站样式 -->
+  <link rel="stylesheet" href="/src/style.css">
+  <style>
+    .rl-layout{
+      max-width:1100px;
+      margin:16px auto 32px;
+      padding:0 16px;
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+    }
+    .rl-left{
+      flex:1 1 0;
+      background:#0b1020;
+      border-radius:12px;
+      border:1px solid #1c2533;
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .rl-left-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      font-size:13px;
+      color:#9ca3af;
+    }
+    #rlCanvas{
+      width:100%;
+      aspect-ratio:1/1;
+      border-radius:10px;
+      border:1px solid #1f2937;
+      background:#050814;
+    }
+    .rl-panel{
+      width:320px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+    .rl-card{
+      background:#0b1020;
+      border-radius:12px;
+      border:1px solid #1c2533;
+      padding:12px 14px;
+      font-size:14px;
+    }
+    .rl-card h2{
+      margin:0 0 8px;
+      font-size:15px;
+    }
+    .rl-muted{
+      font-size:13px;
+      color:#9ca3af;
+      line-height:1.5;
+    }
+    .rl-kv{
+      display:flex;
+      justify-content:space-between;
+      font-size:13px;
+      margin:2px 0;
+    }
+    .rl-kv span:first-child{
+      color:#9ca3af;
+    }
+    .rl-controls button{
+      display:inline-block;
+      margin:4px 4px 0 0;
+      padding:6px 10px;
+      font-size:13px;
+      border-radius:8px;
+      border:1px solid #2c3342;
+      background:#111827;
+      color:#e5e7eb;
+      cursor:pointer;
+    }
+    .rl-controls button:hover{
+      background:#1f2937;
+    }
+    .tag-pill{
+      display:inline-flex;
+      align-items:center;
+      padding:2px 6px;
+      border-radius:999px;
+      font-size:11px;
+      border:1px solid #374151;
+      color:#9ca3af;
+      gap:4px;
+    }
+    .tag-pill span{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+    }
+    .tag-start span{background:#22c55e;}
+    .tag-goal span{background:#fbbf24;}
+    .tag-trap span{background:#ef4444;}
+    .tag-agent span{background:#60a5fa;}
+    @media (max-width:900px){
+      .rl-layout{flex-direction:column;}
+      .rl-panel{width:100%;}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <a href="index.html" style="font-weight:700">AI Race</a>
+  <ul class="nav">
+    <!-- 返回按钮 -->
+    <li>
+      <a href="javascript:void(0)"
+         onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+        ← 返回
+      </a>
+    </li>
+    <li><a href="editor.html">编辑器</a></li>
+    <li><a href="lab.html">AI 实验室</a></li>
+    <li><a href="dashboard.html">训练看板</a></li>
+    <li>
+      <a href="#">更多 ▾</a>
+      <div class="dropdown">
+        <a href="replays.html">回放库</a>
+        <a href="help.html">帮助/原理</a>
+        <a href="about.html">关于</a>
+        <a href="rl.html">RL 迷宫学习 Demo</a>
+      </div>
+    </li>
+  </ul>
+</header>
+
+<main class="rl-layout">
+  <!-- 左侧：网格世界 + 动画 -->
+  <section class="rl-left">
+    <div class="rl-left-header">
+      <div style="font-size:14px;">Q-learning 网格迷宫</div>
+      <div style="display:flex;gap:6px;">
+        <span class="tag-pill tag-start"><span></span>起点</span>
+        <span class="tag-pill tag-goal"><span></span>终点</span>
+        <span class="tag-pill tag-trap"><span></span>陷阱</span>
+        <span class="tag-pill tag-agent"><span></span>智能体</span>
+      </div>
+    </div>
+    <canvas id="rlCanvas"></canvas>
+    <p class="rl-muted">
+      这是一个 7×7 的离散迷宫。智能体一开始什么都不会，只知道：
+      <code>终点 = 高奖励</code>，<code>踩红色 = 巨大惩罚</code>，以及
+      <code>每走一步都有轻微时间惩罚</code>。<br>
+      通过 Q-learning，它会逐渐学会避开陷阱并以更短路径抵达终点。
+    </p>
+  </section>
+
+  <!-- 右侧：控制与统计 -->
+  <aside class="rl-panel">
+    <div class="rl-card">
+      <h2>训练控制</h2>
+      <div class="rl-controls">
+        <button id="btnRlStart">开始持续训练</button>
+        <button id="btnRlPause">暂停 / 继续</button>
+        <button id="btnRlStepEp">单步：跑 1 局</button>
+        <button id="btnRlReset">重置 Q 表</button>
+      </div>
+      <p class="rl-muted" style="margin-top:6px;">
+        建议先点“开始持续训练”，观察左侧从“瞎撞乱踩红格”到
+        “基本不踩雷、快速抵达终点”的变化，再用“单步运行一局”慢速演示。
+      </p>
+    </div>
+
+    <div class="rl-card">
+      <h2>环境参数</h2>
+      <div class="rl-kv"><span>网格尺寸</span><span>7 × 7</span></div>
+      <div class="rl-kv"><span>最大步数 / 局</span><span>64</span></div>
+      <div class="rl-kv"><span>奖励设计</span><span>终点 +1 / 陷阱 -1 / 步长 -0.02 / 撞墙 -0.2</span></div>
+    </div>
+
+    <div class="rl-card">
+      <h2>Q-learning 参数</h2>
+      <div class="rl-kv"><span>学习率 α</span><span id="rlAlpha">0.30</span></div>
+      <div class="rl-kv"><span>折扣因子 γ</span><span id="rlGamma">0.95</span></div>
+      <div class="rl-kv"><span>探索率 ε</span><span id="rlEps">1.00 → 0.05</span></div>
+      <div class="rl-kv"><span>当前 ε</span><span id="rlEpsNow">1.00</span></div>
+    </div>
+
+    <div class="rl-card">
+      <h2>训练统计</h2>
+      <div class="rl-kv"><span>总局数</span><span id="rlEpisode">0</span></div>
+      <div class="rl-kv"><span>成功到达</span><span id="rlSuccess">0</span></div>
+      <div class="rl-kv"><span>成功率（最近 100 局）</span><span id="rlSuccessRate">0%</span></div>
+      <div class="rl-kv"><span>平均奖励（最近 100 局）</span><span id="rlAvgReward">0.00</span></div>
+      <div class="rl-kv"><span>平均步数（最近 100 局）</span><span id="rlAvgSteps">0.0</span></div>
+      <div class="rl-kv"><span>最近一局奖励</span><span id="rlLastReward">0.00</span></div>
+      <div class="rl-kv"><span>最近一局步数</span><span id="rlLastSteps">0</span></div>
+    </div>
+
+    <div class="rl-card">
+      <h2>说明</h2>
+      <p class="rl-muted">
+        这里实现的是<strong>标准 Q-learning</strong>：<br>
+        <code>Q(s,a) ← Q(s,a) + α [ r + γ max_a' Q(s',a') - Q(s,a) ]</code><br>
+        策略为 ε-greedy，ε 随训练局数指数衰减。环境是离散网格世界，之后可以把
+        Q 表导出，映射为 3D 迷宫中的“策略示教”或决策热力图。
+      </p>
+    </div>
+  </aside>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<!-- RL Q-learning 入口脚本 -->
+<script type="module" src="/src/arena_rl.js"></script>
+</body>
+</html>
