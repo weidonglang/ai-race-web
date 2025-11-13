@@ -18,3 +18,73 @@ h1{margin:16px 0}
 .swiper{width:100%;height:360px;border-radius:16px;overflow:hidden}
 .swiper-slide{display:flex;align-items:center;justify-content:center;font-size:28px;background:#162030}
 .footer{color:#8aa0b8;text-align:center;padding:24px 0;border-top:1px solid #1c2533;margin-top:40px}
+/* 对抗 Arena 页面布局 */
+.arena-layout{
+  max-width:none;
+  margin:0;
+  padding:0 0 0;
+  display:flex;
+  height:calc(100vh - 64px); /* 预留给顶部导航 */
+}
+
+#arena-viewport{
+  flex:1;
+  min-width:0;
+}
+
+/* 右侧控制面板 */
+#arena-panel{
+  width:320px;
+  padding:16px;
+  border-left:1px solid #1c2533;
+  background:#0f131a;
+  overflow:auto;
+}
+
+.arena-muted{
+  color:var(--muted);
+  font-size:13px;
+}
+
+/* 小卡片样式 */
+.arena-card{
+  border-radius:12px;
+  border:1px solid #1c2533;
+  padding:12px 12px 10px;
+  margin-bottom:12px;
+  font-size:13px;
+  background:#0b1018;
+}
+
+.arena-card h2{
+  margin:0 0 6px;
+  font-size:14px;
+}
+
+/* 左右对齐行 */
+.arena-kv{
+  display:flex;
+  justify-content:space-between;
+  margin:2px 0;
+}
+
+.arena-kv span:last-child{
+  font-weight:500;
+}
+
+/* 控制按钮区 */
+.arena-controls button{
+  display:block;
+  width:100%;
+  margin-bottom:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid #2c3342;
+  background:#1a2130;
+  color:var(--text);
+  cursor:pointer;
+}
+
+.arena-controls button:hover{
+  background:#233049;
+}

@@ -1,19 +1,14 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { init as initRecast, NavMeshQuery } from 'recast-navigation'
+import { generateSoloNavMesh } from 'recast-navigation/generators'
+import { NavMeshHelper } from '@recast-navigation/three'
 
-/* ---------- DOM utils ---------- */
-const $ = (id) => document.getElementById(id)
-const on = (el, evt, fn) => { if (el) el.addEventListener(evt, fn) }
-const num = (el, def) => el ? parseFloat(el.value || `${def}`) : def
-const int = (el, def) => el ? parseInt(el.value || `${def}`, 10) : def
-const bool = (el, def) => el ? !!el.checked : def
-const setText = (el, t) => { if (el) el.textContent = t }
-
-/* ---------- Three.js setup ---------- */
-const root = $('viewport')
+/* ---------- three.js 基础 ---------- */
+const root = document.getElementById('viewport')
 const renderer = new THREE.WebGLRenderer({ antialias: true })
 renderer.setSize(root.clientWidth, root.clientHeight)
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 root.appendChild(renderer.domElement)
 
 const scene = new THREE.Scene()
@@ -25,13 +20,13 @@ camera.position.set(10, 12, 18)
 const controls = new OrbitControls(camera, renderer.domElement)
 controls.enableDamping = true
 
-const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.8)
+const hemi = new THREE.HemisphereLight(0xffffff, 0x222233, 0.7)
 scene.add(hemi)
 const dir = new THREE.DirectionalLight(0xffffff, 0.8)
 dir.position.set(6, 10, 6)
 scene.add(dir)
 
-/* Ground + Grid */
+/* 地面 + 网格 */
 const FLOOR_SIZE = 30
 const floorGeo = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE, 1, 1)
 floorGeo.rotateX(-Math.PI / 2)
@@ -44,24 +39,29 @@ const grid = new THREE.GridHelper(FLOOR_SIZE, FLOOR_SIZE, 0x444a57, 0x303543)
 grid.position.y = 0.01
 scene.add(grid)
 
-/* ---------- Scene edit state ---------- */
+/* ---------- 状态 ---------- */
 const raycaster = new THREE.Raycaster()
 const mouseNDC = new THREE.Vector2()
-let placingMode = null // 'box' | 'start' | 'end' | null
-let downPos = null
-
+let placingMode = null                  // 'box' | 'start' | 'end' | null
 const obstacles = []
 let startMarker = null
 let endMarker = null
+let navQuery = null
+let navHelper = null
+let pathLine = null
+let lastPathPoints = null               // THREE.Vector3[]（最近一次寻路折线）
+let downPos = null                      // pointerdown 位置用于区分拖动/点击
 
+// 选中/拖动
 let selectedObstacle = null
 let draggingObstacle = null
 let isDragging = false
 
-function updateCursor() {
-  renderer.domElement.style.cursor = (placingMode || rl.visual) ? 'crosshair' : 'default'
+const updateCursor = () => {
+  renderer.domElement.style.cursor = (placingMode || isDragging) ? 'crosshair' : 'default'
 }
 
+/* ---------- 工具 ---------- */
 function makeMarker(color) {
   return new THREE.Mesh(
     new THREE.SphereGeometry(0.25, 24, 16),
@@ -76,10 +76,10 @@ function addObstacleAt(point) {
   box.castShadow = true
   box.receiveShadow = true
   box.name = 'Obstacle'
+  // 记录基础自发光色用于高亮恢复
   box.userData.baseEmissive = (box.material.emissive ? box.material.emissive.getHex() : 0x000000)
   scene.add(box)
   obstacles.push(box)
-  rlDirtyGrid()
 }
 function pickOnFloor(ev) {
   const rect = renderer.domElement.getBoundingClientRect()
@@ -97,393 +97,429 @@ function pickObstacle(ev) {
   const hit = raycaster.intersectObjects(obstacles, false)[0]
   return hit ? hit.object : null
 }
-function selectObstacle(obj){
-  if (selectedObstacle && selectedObstacle !== obj)
-    selectedObstacle.material.emissive?.setHex(selectedObstacle.userData.baseEmissive ?? 0x000000)
+function selectObstacle(obj) {
+  if (selectedObstacle && selectedObstacle !== obj) {
+    if (selectedObstacle.material.emissive) {
+      selectedObstacle.material.emissive.setHex(selectedObstacle.userData.baseEmissive ?? 0x000000)
+    }
+  }
   selectedObstacle = obj || null
-  if (selectedObstacle) selectedObstacle.material.emissive?.setHex(0x00ffff)
+  if (selectedObstacle && selectedObstacle.material.emissive) {
+    selectedObstacle.material.emissive.setHex(0x00ffff)
+  }
 }
-
-/* Edit interactions */
-renderer.domElement.addEventListener('pointerdown', (ev) => {
-  downPos = { x: ev.clientX, y: ev.clientY }
-  if (!placingMode && ev.shiftKey) {
-    const obj = pickObstacle(ev)
-    if (obj) { isDragging = true; draggingObstacle = obj; selectObstacle(obj); controls.enabled = false; updateCursor() }
-  }
-})
-renderer.domElement.addEventListener('pointermove', (ev) => {
-  if (!isDragging || !draggingObstacle) return
-  const p = pickOnFloor(ev); if (p) { draggingObstacle.position.set(p.x, 1.0, p.z); rlDirtyGrid() }
-})
-renderer.domElement.addEventListener('pointerup', () => {
-  if (isDragging) { isDragging = false; draggingObstacle = null; controls.enabled = true; updateCursor() }
-})
-renderer.domElement.addEventListener('click', (ev) => {
-  if (ev.button !== 0) return
-  if (downPos) { const dx = ev.clientX - downPos.x, dy = ev.clientY - downPos.y; if (Math.hypot(dx, dy) > 5) return }
-  if (placingMode) {
-    const p = pickOnFloor(ev); if (!p) return
-    if (placingMode === 'box') addObstacleAt(p)
-    else if (placingMode === 'start') { if (!startMarker) { startMarker = makeMarker(0x22cc88); scene.add(startMarker) } startMarker.position.set(p.x, 0.25, p.z); placingMode=null; updateCursor(); rlDirtyGrid() }
-    else if (placingMode === 'end')   { if (!endMarker)   { endMarker   = makeMarker(0xff5555); scene.add(endMarker)   } endMarker.position.set(p.x, 0.25, p.z); placingMode=null; updateCursor(); rlDirtyGrid() }
-    return
-  }
-  const obj = pickObstacle(ev)
-  if (obj) { if (ev.ctrlKey) { deleteObstacle(obj) } else { selectObstacle(obj === selectedObstacle ? null : obj) } }
-  else { selectObstacle(null) }
-})
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { placingMode = null; updateCursor() }
-  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObstacle) { e.preventDefault(); deleteObstacle(selectedObstacle); selectedObstacle = null }
-})
 function deleteObstacle(obj) {
   const idx = obstacles.indexOf(obj)
   if (idx >= 0) obstacles.splice(idx, 1)
   scene.remove(obj)
   if (selectedObstacle === obj) selectedObstacle = null
-  rlDirtyGrid()
 }
 
-/* Top buttons */
-on($('btnAddBox'), 'click', () => { placingMode = (placingMode === 'box') ? null : 'box'; updateCursor() })
-on($('btnSetStart'), 'click', () => { placingMode = (placingMode === 'start') ? null : 'start'; updateCursor() })
-on($('btnSetEnd'),   'click', () => { placingMode = (placingMode === 'end') ? null : 'end'; updateCursor() })
-on($('btnClear'),    'click', () => {
+/* ---------- 几何转数组（地面 + 障碍） ---------- */
+function getPositionsAndIndicesFromMeshes(meshes) {
+  const positions = []
+  const indices = []
+  let indexOffset = 0
+  for (const mesh of meshes) {
+    const geom = mesh.geometry.clone()
+    geom.applyMatrix4(mesh.matrixWorld)
+    const nonIdx = geom.index ? geom.toNonIndexed() : geom
+    const arr = nonIdx.getAttribute('position').array
+    for (let i = 0; i < arr.length; i += 3) positions.push(arr[i], arr[i + 1], arr[i + 2])
+    const triCount = arr.length / 9
+    for (let t = 0; t < triCount; t++) {
+      indices.push(indexOffset + t * 3 + 0, indexOffset + t * 3 + 1, indexOffset + t * 3 + 2)
+    }
+    indexOffset += triCount * 3
+  }
+  return [positions, indices]
+}
+
+/* ---------- NavMesh 烘焙 ---------- */
+async function bakeNavMesh() {
+  if (navHelper) { scene.remove(navHelper); navHelper = null }
+  if (pathLine) { scene.remove(pathLine); pathLine = null }
+  lastPathPoints = null
+
+  // 隐藏所有 agent（避免视觉残留）
+  agentSolo.stop(); agentSolo.mesh.visible = false
+  agentA.stop();    agentA.mesh.visible = false
+  agentB.stop();    agentB.mesh.visible = false
+
+  const inputMeshes = [floor, ...obstacles]
+  const [positions, indices] = getPositionsAndIndicesFromMeshes(inputMeshes)
+  await initRecast()
+
+  const cfg = {
+    cs: 0.25, ch: 0.2,
+    walkableHeight: 1.8,
+    walkableRadius: 0.4,
+    walkableClimb: 0.4,
+    walkableSlopeAngle: 45
+  }
+  const { success, navMesh } = generateSoloNavMesh(positions, indices, cfg)
+  if (!success) { alert('NavMesh 生成失败，请调整参数或几何！'); return }
+
+  navQuery = new NavMeshQuery(navMesh)
+  navHelper = new NavMeshHelper(navMesh)
+  scene.add(navHelper)
+}
+
+/* ---------- 寻路（高层 API） ---------- */
+function findPathAndDraw() {
+  if (!navQuery || !startMarker || !endMarker) { alert('请先设置起点/终点并烘焙 NavMesh'); return }
+
+  const { success, path, error } = navQuery.computePath(
+    { x: startMarker.position.x, y: startMarker.position.y, z: startMarker.position.z },
+    { x: endMarker.position.x,   y: endMarker.position.y,   z: endMarker.position.z }
+  )
+  if (!success || !path || path.length < 2) {
+    console.warn('computePath 失败：', error)
+    alert('寻路失败：起点/终点可能不在可走区域附近，或区域不连通')
+    return
+  }
+
+  lastPathPoints = path.map(p => new THREE.Vector3(p.x, p.y, p.z))
+
+  // 折线可视化
+  const pts = lastPathPoints.map(v => new THREE.Vector3(v.x, v.y + 0.05, v.z))
+  const g = new THREE.BufferGeometry().setFromPoints(pts)
+  const m = new THREE.LineBasicMaterial({ linewidth: 2, color: 0x00e5ff })
+  if (pathLine) scene.remove(pathLine)
+  pathLine = new THREE.Line(g, m)
+  scene.add(pathLine)
+
+  // 不自动显示/复位 agent，避免复位重叠
+}
+
+/* ---------- Agent ---------- */
+class Agent {
+  constructor(color = 0x00d084) {
+    this.speed = 3.0
+    this.turnK = 10.0
+    this.radius = 0.25
+    this.mesh = new THREE.Mesh(
+      new THREE.SphereGeometry(this.radius, 24, 16),
+      new THREE.MeshStandardMaterial({ color })
+    )
+    this.mesh.castShadow = true
+    this.mesh.visible = false    // 显示时机：start() 时
+    scene.add(this.mesh)
+
+    this.path = null
+    this.i = 0
+    this.running = false
+    this.done = false
+  }
+  resetToStart() {
+    if (!lastPathPoints || lastPathPoints.length < 2) {
+      this.path = null; this.running = false; this.done = false; this.mesh.visible = false; return
+    }
+    this.path = lastPathPoints
+    this.i = 0; this.running = false; this.done = false
+    const p0 = this.path[0]
+    this.mesh.position.set(p0.x, 0.25, p0.z)
+  }
+  start() {
+    if (!this.path || this.path.length < 2) return false
+    this.mesh.visible = true
+    this.running = true; this.done = false; return true
+  }
+  pauseToggle() { this.running = !this.running }
+  stop() { this.running = false }
+  update(dt) {
+    if (!this.running || this.done || !this.path) return
+    const pos = this.mesh.position
+    let target = this.path[this.i + 1]
+    if (!target) { this.done = true; this.running = false; return }
+    const dir = new THREE.Vector3().subVectors(target, pos); dir.y = 0
+    const dist = dir.length()
+    if (dist < 0.05) {
+      this.i++
+      target = this.path[this.i + 1]
+      if (!target) { this.done = true; this.running = false; return }
+    }
+    dir.normalize()
+    pos.addScaledVector(dir, this.speed * dt)
+    const yaw = Math.atan2(dir.x, dir.z)
+    this.mesh.rotation.y += (yaw - this.mesh.rotation.y) * Math.min(1, this.turnK * dt)
+  }
+}
+
+/* ---------- 单人回合控制 ---------- */
+const agentSolo = new Agent(0x00d084)  // 绿
+let episode = { running: false, paused: false, finished: false, tStart: 0, tAccum: 0, pathLen: 0, lastTimeMs: 0 }
+
+function computePathLength(pts) {
+  if (!pts || pts.length < 2) return 0
+  let L = 0; for (let i = 0; i < pts.length - 1; i++) L += pts[i].distanceTo(pts[i + 1])
+  return L
+}
+function startEpisode() {
+  if (!lastPathPoints || lastPathPoints.length < 2) { alert('请先完成寻路。'); return }
+  agentSolo.resetToStart()
+  if (!agentSolo.start()) { alert('未找到可用路径'); return }
+  episode = { running: true, paused: false, finished: false, tStart: performance.now(), tAccum: 0, pathLen: computePathLength(lastPathPoints), lastTimeMs: 0 }
+}
+function togglePause() {
+  if (!episode.running && !episode.paused) return
+  if (!episode.paused) { agentSolo.stop(); episode.paused = true; episode.tAccum += performance.now() - episode.tStart }
+  else { agentSolo.running = true; episode.paused = false; episode.tStart = performance.now() }
+}
+function resetEpisode() {
+  episode.running = false; episode.paused = false; episode.finished = false; episode.tAccum = 0; episode.lastTimeMs = 0
+  agentSolo.resetToStart()
+  agentSolo.mesh.visible = false
+}
+function saveSoloResult(timeMs) {
+  const rec = { timeMs: Math.round(timeMs), pathLen: Number(episode.pathLen.toFixed(3)), ts: Date.now() }
+  const key = 'ai_runs'
+  const arr = JSON.parse(localStorage.getItem(key) || '[]'); arr.push(rec)
+  localStorage.setItem(key, JSON.stringify(arr))
+}
+
+/* ---------- A/B 竞速 ---------- */
+const agentA = new Agent(0x00b0ff)  // 蓝
+const agentB = new Agent(0xff6d00)  // 橙
+agentA.speed = 3.0; agentA.turnK = 10
+agentB.speed = 2.8; agentB.turnK = 12
+
+let race = {
+  running: false, paused: false,
+  finishedA: false, finishedB: false,
+  tStartA: 0, tStartB: 0, tAccumA: 0, tAccumB: 0,
+  timeA: 0, timeB: 0,
+  pathLen: 0
+}
+
+function raceStart() {
+  if (!lastPathPoints || lastPathPoints.length < 2) { alert('请先完成寻路。'); return }
+  agentA.resetToStart(); agentB.resetToStart()
+  if (!agentA.start() || !agentB.start()) { alert('未找到可用路径'); return }
+  race = {
+    running: true, paused: false,
+    finishedA: false, finishedB: false,
+    tStartA: performance.now(), tStartB: performance.now(),
+    tAccumA: 0, tAccumB: 0, timeA: 0, timeB: 0,
+    pathLen: computePathLength(lastPathPoints)
+  }
+}
+function racePauseToggle() {
+  if (!race.running && !race.paused) return
+  if (!race.paused) {
+    agentA.stop(); agentB.stop()
+    race.paused = true
+    const now = performance.now()
+    race.tAccumA += now - race.tStartA
+    race.tAccumB += now - race.tStartB
+  } else {
+    agentA.running = true; agentB.running = true
+    race.paused = false
+    race.tStartA = performance.now(); race.tStartB = performance.now()
+  }
+}
+function raceReset() {
+  race.running = false; race.paused = false
+  race.finishedA = race.finishedB = false
+  race.tAccumA = race.tAccumB = 0; race.timeA = race.timeB = 0
+  agentA.resetToStart(); agentB.resetToStart()
+  agentA.mesh.visible = false; agentB.mesh.visible = false
+}
+function saveRaceResult() {
+  const winner = race.timeA === race.timeB ? 'tie' : (race.timeA < race.timeB ? 'A' : 'B')
+  const rec = {
+    A: { timeMs: Math.round(race.timeA) },
+    B: { timeMs: Math.round(race.timeB) },
+    winner,
+    pathLen: Number(race.pathLen.toFixed(3)),
+    ts: Date.now()
+  }
+  const key = 'ai_dual_runs'
+  const arr = JSON.parse(localStorage.getItem(key) || '[]'); arr.push(rec)
+  localStorage.setItem(key, JSON.stringify(arr))
+}
+
+/* ---------- 放置/选择/移动/删除 ---------- */
+renderer.domElement.addEventListener('pointerdown', (ev) => {
+  downPos = { x: ev.clientX, y: ev.clientY }
+  // Shift + 鼠标按下：开始拖动物体
+  if (!placingMode && ev.shiftKey) {
+    const obj = pickObstacle(ev)
+    if (obj) {
+      isDragging = true
+      draggingObstacle = obj
+      selectObstacle(obj)
+      controls.enabled = false
+      updateCursor()
+    }
+  }
+})
+renderer.domElement.addEventListener('pointermove', (ev) => {
+  if (!isDragging || !draggingObstacle) return
+  const p = pickOnFloor(ev)
+  if (p) draggingObstacle.position.set(p.x, 1.0, p.z)
+})
+renderer.domElement.addEventListener('pointerup', () => {
+  if (isDragging) {
+    isDragging = false
+    draggingObstacle = null
+    controls.enabled = true
+    updateCursor()
+  }
+})
+renderer.domElement.addEventListener('click', (ev) => {
+  if (ev.button !== 0) return
+  // 拖动不当作“点击”
+  if (downPos) {
+    const dx = ev.clientX - downPos.x, dy = ev.clientY - downPos.y
+    if (Math.hypot(dx, dy) > 5) return
+  }
+  // 1) 放置模式
+  if (placingMode) {
+    const p = pickOnFloor(ev); if (!p) return
+    if (placingMode === 'box') addObstacleAt(p)
+    else if (placingMode === 'start') {
+      if (!startMarker) { startMarker = makeMarker(0x22cc88); scene.add(startMarker) }
+      startMarker.position.set(p.x, 0.25, p.z)
+      placingMode = null; updateCursor()
+    } else if (placingMode === 'end') {
+      if (!endMarker) { endMarker = makeMarker(0xff5555); scene.add(endMarker) }
+      endMarker.position.set(p.x, 0.25, p.z)
+      placingMode = null; updateCursor()
+    }
+    return
+  }
+  // 2) 非放置模式：删除 / 选择
+  const obj = pickObstacle(ev)
+  if (obj) {
+    if (ev.ctrlKey) {
+      deleteObstacle(obj)         // Ctrl + 点击：快速删除
+    } else {
+      selectObstacle(obj === selectedObstacle ? null : obj)
+    }
+  } else {
+    selectObstacle(null)          // 空白处取消选中
+  }
+})
+// 全局键盘：Esc 取消放置；Delete/Backspace 删除选中（修复点）
+const keydownHandler = (e) => {
+  if (e.key === 'Escape') { placingMode = null; updateCursor() }
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedObstacle) {
+    e.preventDefault()
+    deleteObstacle(selectedObstacle)
+    selectedObstacle = null
+  }
+}
+window.addEventListener('keydown', keydownHandler)
+document.addEventListener('keydown', keydownHandler)
+
+/* ---------- UI 绑定 ---------- */
+document.getElementById('btnAddBox').onclick   = () => { placingMode = (placingMode === 'box') ? null : 'box'; updateCursor() }
+document.getElementById('btnSetStart').onclick = () => { placingMode = (placingMode === 'start') ? null : 'start'; updateCursor() }
+document.getElementById('btnSetEnd').onclick   = () => { placingMode = (placingMode === 'end') ? null : 'end'; updateCursor() }
+document.getElementById('btnBake').onclick     = () => bakeNavMesh()
+document.getElementById('btnFind').onclick     = () => { findPathAndDraw() }
+document.getElementById('btnClear').onclick    = () => {
   placingMode = null; updateCursor()
   obstacles.forEach(m => scene.remove(m)); obstacles.length = 0
   selectObstacle(null)
   if (startMarker) { scene.remove(startMarker); startMarker = null }
-  if (endMarker)   { scene.remove(endMarker);   endMarker   = null }
-  rlStop(); rlClearAll()
-})
+  if (endMarker)   { scene.remove(endMarker);   endMarker = null }
+  if (pathLine)    { scene.remove(pathLine);    pathLine = null }
+  if (navHelper)   { scene.remove(navHelper);   navHelper = null }
+  navQuery = null
+  lastPathPoints = null
+  agentSolo.stop(); agentSolo.mesh.visible = false
+  raceReset()
+  agentA.mesh.visible = false; agentB.mesh.visible = false
+}
 
-/* HUD refs */
+/* 单人回合按钮 */
+document.getElementById('btnRun').onclick   = () => startEpisode()
+document.getElementById('btnPause').onclick = () => togglePause()
+document.getElementById('btnReset').onclick = () => resetEpisode()
+
+/* 竞速按钮 */
+document.getElementById('btnRace').onclick       = () => raceStart()
+document.getElementById('btnRacePause').onclick  = () => racePauseToggle()
+document.getElementById('btnRaceReset').onclick  = () => raceReset()
+
+/* ---------- HUD ---------- */
+const $ = (id) => document.getElementById(id)
 const hud = {
-  obs: $('hudObs'),
-  who: $('hudWho'), epi: $('hudEpi'), ret: $('hudRet'), steps: $('hudSteps'),
-  bestA: $('hudBestA'), bestB: $('hudBestB'),
-  speed: $('rlSpeed'), speedVal: $('rlSpeedVal')
+  obs: $('hudObs'), nav: $('hudNav'),
+  pathLen: $('hudPathLen'), pts: $('hudPts'),
+  soloStatus: $('hudSoloStatus'), soloSpeed: $('hudSoloSpeed'), soloTime: $('hudSoloTime'),
+  raceA: $('hudRaceA'), raceB: $('hudRaceB'), winner: $('hudWinner')
+}
+function fmtMs(ms){
+  if (!ms || ms <= 0) return '0 ms'
+  if (ms < 1000) return `${Math.round(ms)} ms`
+  return `${(ms/1000).toFixed(2)} s`
+}
+function updateHUD(nowMs){
+  hud.obs.textContent = String(obstacles.length)
+  const navReady = !!navQuery
+  hud.nav.textContent = navReady ? '已就绪' : '未烘焙'
+  hud.nav.className = `tag ${navReady ? 'ok' : 'bad'}`
+  const len = lastPathPoints ? computePathLength(lastPathPoints) : 0
+  hud.pathLen.textContent = len.toFixed(2)
+  hud.pts.textContent = lastPathPoints ? String(lastPathPoints.length) : '0'
+  hud.soloSpeed.textContent = `${agentSolo.speed.toFixed(2)} m/s`
+  let soloState = 'Idle', soloT = 0
+  if (episode.running && !episode.paused) { soloState = 'Running'; soloT = episode.tAccum + (nowMs - episode.tStart) }
+  else if (episode.paused) { soloState = 'Paused'; soloT = episode.tAccum }
+  else if (episode.finished) { soloState = 'Done'; soloT = episode.lastTimeMs }
+  hud.soloStatus.textContent = soloState
+  hud.soloTime.textContent = fmtMs(soloT)
+  const curA = race.finishedA ? race.timeA : race.tAccumA + (race.running && !race.paused ? (nowMs - race.tStartA) : 0)
+  const curB = race.finishedB ? race.timeB : race.tAccumB + (race.running && !race.paused ? (nowMs - race.tStartB) : 0)
+  const stA = race.finishedA ? 'Done' : (race.paused ? (race.running ? 'Paused' : 'Idle') : (race.running ? 'Running' : 'Idle'))
+  const stB = race.finishedB ? 'Done' : (race.paused ? (race.running ? 'Paused' : 'Idle') : (race.running ? 'Running' : 'Idle'))
+  hud.raceA.textContent = `${stA} — ${fmtMs(curA)}`
+  hud.raceB.textContent = `${stB} — ${fmtMs(curB)}`
+  hud.winner.textContent = (race.finishedA && race.finishedB) ? (race.timeA === race.timeB ? '平局' : (race.timeA < race.timeB ? 'A' : 'B')) : '—'
 }
 
-/* ---------- RL UI ---------- */
-const rlUI = {
-  h: $('rlH'), maxSteps: $('rlMaxSteps'),
-  alpha: $('rlAlpha'), gamma: $('rlGamma'),
-  epsStart: $('rlEpsStart'), epsEnd: $('rlEpsEnd'), epsDecay: $('rlEpsDecay'),
-  rGoal: $('rlRGoal'), cStep: $('rlCstep'), cWall: $('rlCwall'), cRepeat: $('rlCrepeat'),
-  build: $('btnRLBuild'), start: $('btnRLStart'), pause: $('btnRLPause'), stop: $('btnRLStop'),
-  replayA: $('btnRLReplayA'), replayB: $('btnRLReplayB'),
-  visual: $('rlVisual'), fast: $('rlFast'), showGrid: $('rlShowGrid'),
-  speed: $('rlSpeed')
-}
-
-const ACTIONS = [[1,0],[1,1],[0,1],[-1,1],[-1,0],[-1,-1],[0,-1],[1,-1]]
-
-/* ---------- Environment (shared) ---------- */
-const RL = {
-  gridReady:false, h:0.6, nx:0, nz:0, x0:0, z0:0,
-  passable:[], positions:[],
-  sStart:-1, sGoal:-1
-}
-let rlGridLines = null
-
-/* Agent meshes */
-class AgentMesh {
-  constructor(color){ this.mesh=new THREE.Mesh(new THREE.SphereGeometry(0.25,24,16), new THREE.MeshStandardMaterial({color})); this.mesh.visible=false; scene.add(this.mesh) }
-  setPos(v){ this.mesh.position.copy(v); this.mesh.visible=true }
-  hide(){ this.mesh.visible=false }
-}
-const agentA = new AgentMesh(0x00b0ff) // 蓝
-const agentB = new AgentMesh(0xff6d00) // 橙
-
-/* Learners (independent) */
-function createLearner(tag){
-  return {
-    tag, Q:new Map(), epi:0, success:0,
-    s:-1, ret:0, steps:0, done:false,
-    pathIdxs:[], visits:null,  // visits 将在 buildNavGrid 后初始化为 Uint16Array(N)
-    best:{steps:Infinity, path:null},
-    curLine:null, bestLine:null,
-    agent:(tag==='A')?agentA:agentB
-  }
-}
-const L = { A:createLearner('A'), B:createLearner('B') }
-
-/* Runtime */
-const rl = {
-  running:false, paused:false,
-  visual:true, fast:false, showGrid:true,
-  who:'A',
-  speedMul:1.0, stepClock:0, targetHz:30
-}
-
-/* --------- RL helpers --------- */
-function rlClearAll(){
-  RL.gridReady=false; RL.passable=[]; RL.positions=[]; RL.sStart=-1; RL.sGoal=-1
-  for (const k of ['A','B']){
-    L[k].Q.clear()
-    L[k].epi=0; L[k].success=0
-    L[k].s=-1; L[k].ret=0; L[k].steps=0; L[k].done=false; L[k].pathIdxs=[]
-    if (L[k].visits) L[k].visits = null
-    if (L[k].curLine){ scene.remove(L[k].curLine); L[k].curLine=null }
-    if (L[k].bestLine){ scene.remove(L[k].bestLine); L[k].bestLine=null }
-    L[k].agent.hide()
-  }
-  if (rlGridLines){ scene.remove(rlGridLines); rlGridLines=null }
-}
-function rlDirtyGrid(){ RL.gridReady=false; if (rlGridLines){ scene.remove(rlGridLines); rlGridLines=null } }
-
-function buildNavGrid(){
-  if (!startMarker || !endMarker){ alert('请先设置起点与终点'); return }
-  RL.h = num(rlUI.h, 0.6)
-  const h = RL.h
-  const half = FLOOR_SIZE/2; RL.x0=-half; RL.z0=-half
-  RL.nx = Math.floor(FLOOR_SIZE/h)+1; RL.nz = Math.floor(FLOOR_SIZE/h)+1
-  const N = RL.nx*RL.nz
-  RL.passable = new Uint8Array(N); RL.positions = new Array(N)
-  const boxes = obstacles.map(o => (new THREE.Box3()).setFromObject(o))
-  for (let iz=0; iz<RL.nz; iz++){
-    for (let ix=0; ix<RL.nx; ix++){
-      const x=RL.x0+ix*h, z=RL.z0+iz*h
-      const p3 = new THREE.Vector3(x,1.0,z)
-      let free=true; for (const b of boxes){ if (b.containsPoint(p3)){ free=false; break } }
-      const id=ix+iz*RL.nx
-      RL.passable[id]=free?1:0
-      RL.positions[id]=new THREE.Vector3(x,0.25,z)
-    }
-  }
-  RL.sStart = nearestPassable(startMarker.position)
-  RL.sGoal  = nearestPassable(endMarker.position)
-  RL.gridReady = RL.sStart>=0 && RL.sGoal>=0
-  if (!RL.gridReady){ alert('网格构建失败：请调整起终点或减小 h'); return }
-
-  // 初始化/清零两名智能体的“本回合访问计数”
-  L.A.visits = new Uint16Array(N)
-  L.B.visits = new Uint16Array(N)
-
-  drawGridOverlay()
-
-  // 清当前可视化，隐藏球体
-  for (const k of ['A','B']){
-    if (L[k].curLine){ scene.remove(L[k].curLine); L[k].curLine=null }
-    L[k].agent.hide()
-  }
-}
-function drawGridOverlay(){
-  if (rlGridLines){ scene.remove(rlGridLines); rlGridLines=null }
-  if (!bool(rlUI.showGrid,true)) return
-  const g = new THREE.BufferGeometry(); const verts=[]
-  const h=RL.h
-  for (let iz=0; iz<RL.nz; iz++){
-    for (let ix=0; ix<RL.nx; ix++){
-      const id=ix+iz*RL.nx; if (!RL.passable[id]) continue
-      const x=RL.x0+ix*h, z=RL.z0+iz*h, y=0.02
-      verts.push(x,y,z, x+h,y,z+h)
-    }
-  }
-  g.setAttribute('position', new THREE.Float32BufferAttribute(verts,3))
-  rlGridLines = new THREE.LineSegments(g, new THREE.LineBasicMaterial({color:0x223044, transparent:true, opacity:0.6}))
-  scene.add(rlGridLines)
-}
-function nearestPassable(pos){
-  const ix=Math.round((pos.x-RL.x0)/RL.h), iz=Math.round((pos.z-RL.z0)/RL.h)
-  let best=-1, bestd=1e9
-  for (let dz=-2; dz<=2; dz++){
-    for (let dx=-2; dx<=2; dx++){
-      const x=ix+dx, z=iz+dz
-      if (x<0||z<0||x>=RL.nx||z>=RL.nz) continue
-      const id=x+z*RL.nx
-      if (RL.passable[id]){
-        const d=RL.positions[id].distanceTo(new THREE.Vector3(pos.x,0.25,pos.z))
-        if (d<bestd){ bestd=d; best=id }
-      }
-    }
-  }
-  return best
-}
-
-/* Q-learning helpers */
-function neighbors(s){
-  const iz=Math.floor(s/RL.nx), ix=s-iz*RL.nx, res=[]
-  for (let a=0;a<8;a++){
-    const dx=ACTIONS[a][0], dz=ACTIONS[a][1], x=ix+dx, z=iz+dz
-    if (x<0||z<0||x>=RL.nx||z>=RL.nz){ res.push(-1); continue }
-    const id=x+z*RL.nx; res.push(RL.passable[id]?id:-1)
-  }
-  return res
-}
-function distGoal(s){ return RL.positions[s].distanceTo(RL.positions[RL.sGoal]) } // 仅用于“是否到达终点”的判定
-function getQ(map,s){ let q=map.get(s); if(!q){ q=new Float32Array(8); map.set(s,q) } return q }
-function epsGreedy(map,s,eps){ const q=getQ(map,s); if(Math.random()<eps) return Math.floor(Math.random()*8); let a=0,b=-1e9; for(let i=0;i<8;i++){ if(q[i]>b){b=q[i];a=i} } return a }
-function qUpdate(map,s,a,r,sn,alpha,gamma){ const q=getQ(map,s), qn=getQ(map,sn); let m=-1e9; for(let i=0;i<8;i++) if(qn[i]>m) m=qn[i]; q[a]+=alpha*(r+gamma*m-q[a]) }
-
-function lineFromPath(pathIdxs, color=0x00e5ff, opacity=1){
-  const pts = pathIdxs.map(i => new THREE.Vector3(RL.positions[i].x, RL.positions[i].y+0.05, RL.positions[i].z))
-  const g=new THREE.BufferGeometry().setFromPoints(pts)
-  const m=new THREE.LineBasicMaterial({ color, transparent: opacity<1, opacity })
-  return new THREE.Line(g,m)
-}
-
-/* Episode lifecycle */
-function beginEpisode(K){ // K = L.A or L.B
-  K.epi += 1; K.ret=0; K.steps=0; K.done=false
-  K.s = RL.sStart; K.pathIdxs=[K.s]
-  if (K.visits) K.visits.fill(0)     // 每回合清零访问计数
-  K.agent.setPos(RL.positions[K.s])
-  if (K.curLine){ scene.remove(K.curLine); K.curLine=null }
-  K.curLine = lineFromPath(K.pathIdxs, K.tag==='A'?0x31c48d:0xf59e0b)
-  scene.add(K.curLine)
-}
-function endEpisode(K, success){
-  if (success) K.success += 1
-  if (success && K.steps < K.best.steps){
-    K.best.steps = K.steps
-    K.best.path = K.pathIdxs.slice()
-    if (K.bestLine) scene.remove(K.bestLine)
-    K.bestLine = lineFromPath(K.best.path, K.tag==='A'?0x8fbfff:0xffc288, 0.65)
-    scene.add(K.bestLine)
-  }
-  rl.who = (K.tag==='A') ? 'B' : 'A'
-  beginEpisode(L[rl.who])
-}
-
-/* One step (pure exploration + penalties) */
-function stepOnce(K){
-  if (!RL.gridReady || K.done) return
-
-  const alpha = num(rlUI.alpha, 0.2),  gamma = num(rlUI.gamma, 0.99)
-  const eps0  = num(rlUI.epsStart, 1.0), eps1 = num(rlUI.epsEnd, 0.05), decay = int(rlUI.epsDecay, 2000)
-
-  const R_goal = num(rlUI.rGoal, 100),
-        c_step = num(rlUI.cStep, 0.05),
-        c_wall = num(rlUI.cWall, 0.50),
-        c_repeat = num(rlUI.cRepeat, 0.10)
-
-  const maxSteps = int(rlUI.maxSteps, 400)
-
-  // —— 每个智能体独立 ε 衰减 —— //
-  const eps = eps1 + (eps0 - eps1) * Math.max(0, 1 - (K.epi / decay))
-
-  const nb = neighbors(K.s)
-  const a  = epsGreedy(K.Q, K.s, eps)
-  const sNext = nb[a] >= 0 ? nb[a] : K.s
-
-  // 纯“负奖励”设计：步进/撞墙/重复；仅到达终点给正奖
-  let r = -c_step
-  if (sNext === K.s && nb[a] < 0) r -= c_wall
-
-  // 本回合重复访问惩罚：第2次起按次数线性扣
-  if (K.visits) {
-    const v = (K.visits[sNext] = (K.visits[sNext] || 0) + 1)
-    if (v > 1) r -= c_repeat * (v - 1)
-  }
-
-  // 终点：一次性大奖励（不提供方向/距离线索）
-  const atGoal = (sNext === RL.sGoal) || (distGoal(sNext) <= RL.h * 0.5)
-  if (atGoal) { r += R_goal; K.done = true }
-
-  qUpdate(K.Q, K.s, a, r, sNext, alpha, gamma)
-  K.ret += r; K.steps += 1; K.s = sNext; K.pathIdxs.push(K.s)
-
-  if (rl.visual){
-    K.agent.setPos(RL.positions[K.s])
-    K.curLine.geometry.setFromPoints(K.pathIdxs.map(i => new THREE.Vector3(RL.positions[i].x, RL.positions[i].y+0.05, RL.positions[i].z)))
-  }
-
-  if (K.steps >= maxSteps) K.done = true
-  if (K.done) endEpisode(K, atGoal)
-}
-
-/* Controls */
-function rlStart(){
-  if (!startMarker || !endMarker){ alert('请先设置起点与终点'); return }
-  if (!RL.gridReady){ buildNavGrid(); if (!RL.gridReady) return }
-  rl.visual = bool(rlUI.visual, true)
-  rl.fast   = bool(rlUI.fast,   false)
-  rl.showGrid = bool(rlUI.showGrid, true); drawGridOverlay()
-  rl.speedMul = parseFloat(hud.speed?.value || '1') || 1
-  rl.stepClock = 0
-  rl.who = 'A'
-  beginEpisode(L.A)
-  rl.running = true; rl.paused = false
-}
-function rlPause(){ if (!rl.running) return; rl.paused = !rl.paused }
-function rlStop(){
-  rl.running=false; rl.paused=false
-  L.A.agent.hide(); L.B.agent.hide()
-  if (L.A.curLine){ scene.remove(L.A.curLine); L.A.curLine=null }
-  if (L.B.curLine){ scene.remove(L.B.curLine); L.B.curLine=null }
-}
-
-/* Bindings */
-on(rlUI.build,'click', buildNavGrid)
-on(rlUI.start,'click', rlStart)
-on(rlUI.pause,'click', rlPause)
-on(rlUI.stop,'click',  ()=>{ rlStop(); rlClearAll() })
-on(rlUI.replayA,'click', ()=> replayBest('A'))
-on(rlUI.replayB,'click', ()=> replayBest('B'))
-on(rlUI.showGrid,'change', ()=> drawGridOverlay())
-
-/* Speed slider */
-if (hud.speed && hud.speedVal){
-  const refreshSpeed = ()=>{ rl.speedMul = parseFloat(hud.speed.value || '1') || 1; setText(hud.speedVal, `${rl.speedMul.toFixed(2)}×`) }
-  on(hud.speed,'input', refreshSpeed)
-  refreshSpeed()
-}
-
-/* Replay best (speed-aware) */
-function replayBest(tag){
-  const K = (tag==='A')?L.A:L.B
-  if (!K.best.path || K.best.path.length<2){ alert(`暂无最佳路径（${tag}）`); return }
-  L.A.agent.hide(); L.B.agent.hide()
-  let i=0, pts=K.best.path.map(id=>RL.positions[id])
-  const stepIntervalMs = Math.max(5, 30 / rl.speedMul)
-  const tick = () => { if (i>=pts.length) return; K.agent.setPos(pts[i]); i++; setTimeout(tick, stepIntervalMs) }
-  tick()
-}
-
-/* Render loop + speed control */
+/* ---------- 渲染循环 ---------- */
 let lastT = performance.now()
-function onResize(){ const w=root.clientWidth, h=root.clientHeight; camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h) }
+function onResize() {
+  const w = root.clientWidth, h = root.clientHeight
+  camera.aspect = w / h
+  camera.updateProjectionMatrix()
+  renderer.setSize(w, h)
+}
 window.addEventListener('resize', onResize)
 
-function updateHUD(){
-  setText(hud.obs, `${obstacles.length}`)
-  setText(hud.who, rl.who)
-  const K = L[rl.who]
-  setText(hud.epi, `${K.epi}`)
-  setText(hud.ret, K.ret.toFixed(2))
-  setText(hud.steps, `${K.steps}`)
-  setText(hud.bestA, L.A.best.steps<Infinity?`${L.A.best.steps}`:'—')
-  setText(hud.bestB, L.B.best.steps<Infinity?`${L.B.best.steps}`:'—')
-}
-
-;(function animate(){
+;(function animate() {
   requestAnimationFrame(animate)
   const now = performance.now()
-  const dt = Math.min((now - lastT)/1000, 0.05)
+  const dt = Math.min((now - lastT) / 1000, 0.05)
   lastT = now
 
-  if (rl.running && !rl.paused && RL.gridReady){
-    if (rl.visual){
-      // 逐步模式：用“节拍器”按速度倍率控制帧内推进步数
-      const hz = rl.targetHz * rl.speedMul
-      const interval = 1 / Math.max(1e-3, hz)
-      rl.stepClock += dt
-      while (rl.stepClock >= interval){
-        rl.stepClock -= interval
-        stepOnce(L[rl.who])
-        if (L[rl.who].done) break
-      }
-    }else{
-      // 快速模式：每帧批量推进，数量也随速度倍率放大
-      const batch = Math.max(1, Math.round(400 * rl.speedMul))
-      for (let i=0;i<batch;i++){ stepOnce(L[rl.who]); if (L[rl.who].done) break }
+  // 单人回合
+  if (episode.running && !episode.paused && !episode.finished) {
+    agentSolo.update(dt)
+    if (agentSolo.done) {
+      episode.finished = true; episode.running = false
+      const tUsed = episode.tAccum + (performance.now() - episode.tStart)
+      episode.lastTimeMs = tUsed
+      saveSoloResult(tUsed)
+      console.log(`单人回合完成：${Math.round(tUsed)} ms，路径 ${episode.pathLen.toFixed(3)} m`)
     }
+  }
+
+  // A/B 竞速
+  if (race.running && !race.paused) {
+    if (!race.finishedA) agentA.update(dt)
+    if (!race.finishedB) agentB.update(dt)
+    const nowMs = performance.now()
+    if (!race.finishedA && agentA.done) { race.finishedA = true; race.timeA = race.tAccumA + (nowMs - race.tStartA); console.log(`A 到达：${Math.round(race.timeA)} ms`) }
+    if (!race.finishedB && agentB.done) { race.finishedB = true; race.timeB = race.tAccumB + (nowMs - race.tStartB); console.log(`B 到达：${Math.round(race.timeB)} ms`) }
+    if (race.finishedA && race.finishedB) { race.running = false; saveRaceResult(); console.log(`竞速完成，A=${Math.round(race.timeA)}ms，B=${Math.round(race.timeB)}ms`) }
   }
 
   controls.update()
   renderer.render(scene, camera)
-  updateHUD()
+  updateHUD(now)
 })()

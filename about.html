@@ -3,22 +3,31 @@
 <title>Editor</title><link rel="stylesheet" href="/src/style.css"></head>
 <body>
   <!-- 复制同样的 header 导航 -->
-  <header>
-    <a href="index.html" style="font-weight:700">AI Race</a>
-    <ul class="nav">
-      <li><a href="editor.html">编辑器</a></li>
-      <li><a href="lab.html">AI 实验室</a></li>
-      <li><a href="dashboard.html">训练看板</a></li>
-      <li>
-        <a href="#">更多 ▾</a>
-        <div class="dropdown">
-          <a href="replays.html">回放库</a>
-          <a href="help.html">帮助/原理</a>
-          <a href="about.html">关于</a>
-        </div>
-      </li>
-    </ul>
-  </header>
+<header>
+  <a href="index.html" style="font-weight:700">AI Race</a>
+  <ul class="nav">
+    <li>
+      <a href="javascript:void(0)"
+         onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+        ← 返回
+      </a>
+    </li>
+
+    <li><a href="editor.html">编辑器</a></li>
+    <li><a href="lab.html">AI 实验室</a></li>
+    <li><a href="dashboard.html">训练看板</a></li>
+    <li><a href="arena.html">对抗 Arena</a></li>
+    <li>
+      <a href="#">更多 ▾</a>
+      <div class="dropdown">
+        <a href="replays.html">回放库</a>
+        <a href="help.html">帮助/原理</a>
+        <a href="about.html">关于</a>
+      </div>
+    </li>
+  </ul>
+</header>
+
   <main class="container"><h1>编辑器（占位）</h1></main>
   <footer class="footer">© 2025 AI Race Demo</footer>
 </body></html>

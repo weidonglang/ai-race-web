@@ -2,151 +2,102 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <title>RL 场景编辑器 · 双智能体学习</title>
+  <title>NavMesh 编辑器 · Day3</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/style.css" />
   <style>
-    body{margin:0;background:#0b1118;color:#cbd5e1;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial}
     .topbar{display:flex;gap:16px;align-items:center;justify-content:space-between;
       padding:10px 16px;background:#121720;border-bottom:1px solid #1c2533;}
     .toolbar{display:flex;flex-wrap:wrap;gap:8px}
     .toolbar button{padding:6px 10px;border:1px solid #2c3342;background:#1a2130;
       color:#dce5f0;border-radius:8px;cursor:pointer}
     .toolbar button:hover{background:#233049}
-    #viewport{position:relative;height:calc(100vh - 56px)}
+
+    /* HUD 信息面板 */
     #hud{
-      position:fixed; right:16px; top:72px; width:380px;
+      position:fixed; right:16px; top:80px; width:280px;
       background:rgba(10,14,20,.78); border:1px solid #1c2533; border-radius:12px;
       padding:10px 12px; color:#cbd5e1; font-size:12px; line-height:1.45;
       backdrop-filter: blur(6px); box-shadow:0 8px 24px rgba(0,0,0,.35);
-      max-height:calc(100vh - 96px); overflow:auto; z-index:20;
+      max-height:calc(100vh - 110px); overflow:auto; z-index:20;
     }
     #hud .card{padding:8px 0; border-bottom:1px solid #202939}
     #hud .card:last-child{border-bottom:none}
     #hud h3{margin:0 0 6px 0; font-size:13px; color:#e2e8f0}
-    #hud .row{display:flex; justify-content:space-between; gap:8px; align-items:center}
+    #hud .row{display:flex; justify-content:space-between; gap:8px}
     #hud .tiny{color:#94a3b8}
-    #hud input[type="number"]{width:86px;background:#0f1520;border:1px solid #263046;color:#cbd5e1;border-radius:6px;padding:2px 6px}
-    #hud input[type="range"]{width:220px}
-    #hud .btn-s{padding:4px 8px;border:1px solid #2c3342;background:#1a2130;color:#dce5f0;border-radius:6px;cursor:pointer}
-    #hud .btn-s:hover{background:#233049}
-    #hud label{display:flex;align-items:center;gap:6px}
-    .help{display:inline-block;width:16px;height:16px;border-radius:50%;
-      background:#1f2a3a;color:#9fb3c8;text-align:center;line-height:16px;font-weight:700;cursor:help}
-    details.guide{margin-top:6px;background:#0f1520;border:1px solid #263046;border-radius:8px;padding:6px 8px}
-    details.guide summary{cursor:pointer;color:#e2e8f0}
-    .a{color:#93c5fd} .b{color:#fdba74}
+    #hud .tag{display:inline-block; padding:2px 6px; border-radius:6px; font-size:11px; background:#1a2433}
+    #hud .tag.ok{background:#083344; color:#67e8f9}
+    #hud .tag.bad{background:#3b0a0a; color:#fca5a5}
+    #hud .a{color:#93c5fd}  /* A 蓝 */
+    #hud .b{color:#fdba74}  /* B 橙 */
+    #hud .g{color:#86efac}  /* 绿 */
   </style>
 </head>
 <body>
   <header class="topbar">
-    <div style="font-weight:700">RL 场景编辑器</div>
+    <div style="font-weight:700">NavMesh 编辑器</div>
+        <button type="button"
+            onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }"
+            style="padding:6px 10px;border:1px solid #2c3342;background:#1a2130;
+                   color:#dce5f0;border-radius:8px;cursor:pointer;">
+      ← 返回
+    </button>
     <div class="toolbar">
       <button id="btnAddBox">+ 障碍</button>
       <button id="btnSetStart">设置起点</button>
       <button id="btnSetEnd">设置终点</button>
+      <button id="btnBake">烘焙 NavMesh</button>
+      <button id="btnFind">寻路</button>
       <button id="btnClear">清除</button>
+
+      <!-- 单人回合 -->
+      <button id="btnRun">开始回合</button>
+      <button id="btnPause">暂停/继续</button>
+      <button id="btnReset">复位</button>
+
+      <!-- A/B 竞速 -->
+      <button id="btnRace">开始竞速 A/B</button>
+      <button id="btnRacePause">暂停/继续竞速</button>
+      <button id="btnRaceReset">复位竞速</button>
     </div>
   </header>
 
-  <main id="viewport"></main>
+  <main id="viewport" style="position:relative;height:calc(100vh - 64px);"></main>
 
+  <!-- 信息面板 HUD -->
   <aside id="hud">
     <div class="card">
       <h3>场景 / Scene</h3>
       <div class="row"><span class="tiny">障碍数</span><span id="hudObs">0</span></div>
-      <div class="tiny">操作：Shift+拖动移动障碍；Ctrl+单击删除；Delete/Backspace 删除选中；单击选中/取消。</div>
+      <div class="row"><span class="tiny">NavMesh</span><span id="hudNav" class="tag bad">未烘焙</span></div>
     </div>
-
     <div class="card">
-      <h3>RL 训练（Q-learning · A/B 完全独立）</h3>
-
-      <div class="row">
-        <span class="tiny">网格步长 h <span class="help" title="离散网格的格子大小。更小=h更细致，但训练更慢；更大=h更粗糙，但训练快。推荐 0.4–0.8。">?</span></span>
-        <span><input id="rlH" type="number" value="0.6" step="0.1"></span>
-      </div>
-
-      <div class="row">
-        <span class="tiny">回合步数上限 <span class="help" title="单回合最多能走多少步，防止无限绕圈。到达终点会提前结束。">?</span></span>
-        <span><input id="rlMaxSteps" type="number" value="400" step="10"></span>
-      </div>
-
-      <div class="row">
-        <span class="tiny">学习率 η / 折扣 γ <span class="help" title="η: 更新幅度；γ: 面向未来的权重。一般 η≈0.1–0.3，γ≈0.95–0.99。">?</span></span>
-        <span><input id="rlAlpha" type="number" value="0.20" step="0.01"> <input id="rlGamma" type="number" value="0.99" step="0.01"></span>
-      </div>
-
-      <div class="row">
-        <span class="tiny">ε 起 / 终 / 衰减回合 <span class="help" title="ε-贪心探索：从全随机(ε=1.0)逐步下降到较小的随机(如0.05)。衰减回合越大，探索期越久。">?</span></span>
-        <span><input id="rlEpsStart" type="number" value="1.00" step="0.01"> <input id="rlEpsEnd" type="number" value="0.05" step="0.01"> <input id="rlEpsDecay" type="number" value="2000" step="50"></span>
-      </div>
-
-      <div class="row">
-        <span class="tiny">奖励：R_goal / c_step / c_wall / c_repeat
-          <span class="help" title="R_goal: 抵达终点一次性大奖励；c_step: 每步小惩罚促使更短路径；c_wall: 撞墙(动作无效)的额外惩罚；c_repeat: 同回合重复踩同一格的惩罚(第2次起按次数线性加扣)。">?</span>
-        </span>
-        <span>
-          <input id="rlRGoal"   type="number" value="100" step="5">
-          <input id="rlCstep"   type="number" value="0.05" step="0.01">
-          <input id="rlCwall"   type="number" value="0.50" step="0.05">
-          <input id="rlCrepeat" type="number" value="0.10" step="0.01">
-        </span>
-      </div>
-
-      <div class="row" style="margin-top:6px">
-        <button id="btnRLBuild" class="btn-s" title="根据场景生成可行走网格">构建/刷新 网格</button>
-        <button id="btnRLStart" class="btn-s" title="开始交替训练：A 与 B 轮流从起点尝试">开始训练</button>
-        <button id="btnRLPause" class="btn-s" title="暂停/继续训练">暂停/继续</button>
-        <button id="btnRLStop"  class="btn-s" title="停止并清空学习到的Q表与可视化">停止并清空 Q</button>
-      </div>
-
-      <div class="row" style="margin-top:8px; align-items:center">
-        <span class="tiny">速度倍率 <span class="help" title="控制训练推演与回放的速度：0.25× 慢放，8× 快进。">?</span></span>
-        <span>
-          <input id="rlSpeed" type="range" min="0.25" max="8" step="0.25" value="1">
-          <span id="rlSpeedVal">1.00×</span>
-        </span>
-      </div>
-
-      <div class="row" style="margin-top:6px">
-        <label title="逐步可视化每一步动作（更直观但更慢）"><input id="rlVisual" type="checkbox" checked> 逐回合可视化</label>
-        <label title="不逐步显示，批量加速训练（更快）"><input id="rlFast" type="checkbox"> 快速训练</label>
-        <label title="显示上采样的网格可视化"><input id="rlShowGrid" type="checkbox" checked> 显示网格</label>
-      </div>
-
-      <div class="row" style="margin-top:6px">
-        <button id="btnRLReplayA" class="btn-s" title="回放 A 当前学到的最佳路径">回放最佳 A</button>
-        <button id="btnRLReplayB" class="btn-s" title="回放 B 当前学到的最佳路径">回放最佳 B</button>
-      </div>
-
-      <details class="guide">
-        <summary>参数注解 / Quick guide</summary>
-        <ul style="margin:6px 0 0 16px;padding:0 0 0 6px">
-          <li><b>h</b>（网格步长）：越小越精细，训练更慢；越大越粗糙，训练更快。常用 0.4–0.8。</li>
-          <li><b>MaxSteps</b>：单回合封顶步数，防止无限绕圈。</li>
-          <li><b>η/γ</b>：η 控制学习速度，γ 决定“看多远的未来”。</li>
-          <li><b>ε-贪心</b>：从 <code>ε_start=1</code>（纯随机）缓慢衰减至 <code>ε_end</code>（少量随机）。<em>真正从零探索</em>。</li>
-          <li><b>R_goal</b>：只在到达终点时给一次正奖励；其余全为惩罚。</li>
-          <li><b>c_step</b>：每步扣分，鼓励走更短路径。</li>
-          <li><b>c_wall</b>：撞墙（动作无效）额外扣分，减少乱撞。</li>
-          <li><b>c_repeat</b>：同回合重复踩同一格的扣分（第2次起按次数线性增加），抑制绕圈。</li>
-          <li><b>速度倍率</b>：同时影响逐步训练与回放。</li>
-        </ul>
-      </details>
+      <h3>路径 / Path</h3>
+      <div class="row"><span class="tiny">长度</span><span><span id="hudPathLen">0</span> m</span></div>
+      <div class="row"><span class="tiny">点数</span><span id="hudPts">0</span></div>
     </div>
-
     <div class="card">
-      <h3>统计（当前主体）</h3>
-      <div class="row"><span>当前主体</span><span id="hudWho">A</span></div>
-      <div class="row"><span>当前回合</span><span id="hudEpi">0</span></div>
-      <div class="row"><span>回报</span><span id="hudRet">0.00</span></div>
-      <div class="row"><span>步数</span><span id="hudSteps">0</span></div>
+      <h3>单人回合 <span class="g">(绿色)</span></h3>
+      <div class="row"><span class="tiny">状态</span><span id="hudSoloStatus">Idle</span></div>
+      <div class="row"><span class="tiny">速度</span><span id="hudSoloSpeed">0</span></div>
+      <div class="row"><span class="tiny">用时</span><span id="hudSoloTime">0 ms</span></div>
     </div>
-
     <div class="card">
-      <h3>最佳成绩</h3>
-      <div class="row"><span class="a">A 最少步数</span><span id="hudBestA">—</span></div>
-      <div class="row"><span class="b">B 最少步数</span><span id="hudBestB">—</span></div>
+      <h3>A/B 竞速</h3>
+      <div class="row"><span class="tiny">A <span class="a">(蓝)</span></span><span id="hudRaceA">Idle — 0 ms</span></div>
+      <div class="row"><span class="tiny">B <span class="b">(橙)</span></span><span id="hudRaceB">Idle — 0 ms</span></div>
+      <div class="row"><span class="tiny">胜者</span><span id="hudWinner">—</span></div>
+    </div>
+    <div class="card">
+      <h3>操作提示</h3>
+      <div class="tiny">
+        Shift + 拖动：移动障碍<br>
+        Ctrl + 单击：删除鼠标下障碍<br>
+        Delete：删除选中障碍<br>
+        单击：选中 / 取消高亮
+      </div>
     </div>
   </aside>
 
