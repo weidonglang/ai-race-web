@@ -9,30 +9,31 @@
 </head>
 <body>
   <!-- 顶部统一导航 -->
-<header>
-  <a href="index.html" style="font-weight:700">AI Race</a>
-  <ul class="nav">
-    <li>
-      <a href="javascript:void(0)"
-         onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
-        ← 返回
-      </a>
-    </li>
+  <header>
+    <a href="index.html" style="font-weight:700">AI Race</a>
+    <ul class="nav">
+      <!-- 返回上一个界面 -->
+      <li>
+        <a href="javascript:void(0)"
+           onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+          ← 返回
+        </a>
+      </li>
 
-    <li><a href="editor.html">编辑器</a></li>
-    <li><a href="lab.html">AI 实验室</a></li>
-    <li><a href="dashboard.html">训练看板</a></li>
-    <li><a href="arena.html">对抗 Arena</a></li>
-    <li>
-      <a href="#">更多 ▾</a>
-      <div class="dropdown">
-        <a href="replays.html">回放库</a>
-        <a href="help.html">帮助/原理</a>
-        <a href="about.html">关于</a>
-      </div>
-    </li>
-  </ul>
-</header>
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="replays.html">回放库</a>
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+  </header>
 
   <!-- Arena 主体：左边 WebGL 视图，右边控制与 HUD -->
   <main class="arena-layout">
@@ -41,9 +42,28 @@
     <aside id="arena-panel">
       <h1 style="margin-top:0;">对抗 Arena</h1>
       <p class="arena-muted">
-        本页用于双智能体在同一场地上的对抗训练。当前实现为演示级骨架：包含场景生命周期（开始 / 暂停 / 结束一局）
-        与历史记录存储，后续会接入 3D 迷宫与完整奖励系统。
+        本页用于双智能体在同一迷宫中的对抗训练。
+        当前实现：从 <code>./mazes</code> 目录随机加载简单 / 中等 / 困难迷宫，
+        按最短路径进行竞速，并使用独立的奖励积分模块为每局对抗打分。
       </p>
+
+      <div class="arena-card">
+        <h2>迷宫信息</h2>
+        <div class="arena-kv"><span>ID</span><span id="arenaMazeId">-</span></div>
+        <div class="arena-kv"><span>难度</span><span id="arenaMazeDiff">-</span></div>
+        <div class="arena-kv"><span>尺寸</span><span id="arenaMazeSize">-</span></div>
+      </div>
+
+      <div class="arena-card arena-controls">
+        <h2>加载迷宫</h2>
+        <button id="btnMazeEasy">随机简单迷宫</button>
+        <button id="btnMazeMedium">随机中等迷宫</button>
+        <button id="btnMazeHard">随机困难迷宫</button>
+        <p class="arena-muted" style="margin-top:8px;">
+          假定你已经用 <code>tools/maze_*.py</code> 生成了
+          <code>mazes/maze_easy_000.json</code> 等文件。
+        </p>
+      </div>
 
       <div class="arena-card">
         <h2>当前回合</h2>
@@ -55,12 +75,14 @@
         <h2>A 选手（蓝）</h2>
         <div class="arena-kv"><span>用时</span><span id="arenaTimeA">0.00 s</span></div>
         <div class="arena-kv"><span>是否到达</span><span id="arenaDoneA">否</span></div>
+        <div class="arena-kv"><span>积分</span><span id="arenaScoreA">0</span></div>
       </div>
 
       <div class="arena-card">
         <h2>B 选手（橙）</h2>
         <div class="arena-kv"><span>用时</span><span id="arenaTimeB">0.00 s</span></div>
         <div class="arena-kv"><span>是否到达</span><span id="arenaDoneB">否</span></div>
+        <div class="arena-kv"><span>积分</span><span id="arenaScoreB">0</span></div>
       </div>
 
       <div class="arena-card">
@@ -69,14 +91,15 @@
       </div>
 
       <div class="arena-card arena-controls">
-        <h2>控制</h2>
+        <h2>对抗控制</h2>
         <button id="btnArenaStart">开始一局</button>
         <button id="btnArenaPause">暂停 / 继续</button>
         <button id="btnArenaNext">下一局</button>
         <button id="btnArenaClear">清空历史记录</button>
         <p class="arena-muted" style="margin-top:8px;">
-          双智能体会从同一条直线路径两端出发进行竞速。
-          当前只是骨架版，后续会替换为 3D 迷宫中的真实路径与奖励函数。
+          每一局中，两名选手沿同一条迷宫最短路径前进，
+          先到达终点者获胜。历史结果保存在
+          <code>localStorage('arena_runs')</code>（含奖励/积分明细）。
         </p>
       </div>
     </aside>

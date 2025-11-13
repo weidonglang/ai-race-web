@@ -4,18 +4,42 @@
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>训练看板 · AI Race</title>
   <link rel="stylesheet" href="/src/style.css">
+  <style>
+    .back-btn{
+      padding:6px 10px;border-radius:8px;border:1px solid #2c3342;
+      background:#1a2130;color:#dce5f0;cursor:pointer;font-size:12px;
+    }
+    .back-btn:hover{background:#233049}
+    main.container section{
+      margin-top:24px;padding:16px 16px 20px;
+      border-radius:14px;border:1px solid #1c2533;
+      background:#101621;
+    }
+    main.container section h2{
+      margin:0 0 6px 0;font-size:18px;
+    }
+    main.container section p.desc{
+      margin:0 0 10px 0;color:#9db0c6;font-size:13px;
+    }
+    .chart-row{
+      display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start;
+    }
+    .chart-row canvas{
+      max-width:480px;min-width:260px;
+      background:#0b0f18;border-radius:12px;padding:8px;
+    }
+    .stats-box{
+      flex:1;min-width:220px;font-size:13px;color:#cbd5e1;
+    }
+    .stats-box ul{margin:6px 0 0 18px;padding:0}
+    .stats-box li{margin:2px 0;}
+    .stats-box code{color:#93c5fd;font-size:12px;}
+  </style>
 </head>
 <body>
 <header>
   <a href="index.html" style="font-weight:700">AI Race</a>
   <ul class="nav">
-    <li>
-      <a href="javascript:void(0)"
-         onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
-        ← 返回
-      </a>
-    </li>
-
     <li><a href="editor.html">编辑器</a></li>
     <li><a href="lab.html">AI 实验室</a></li>
     <li><a href="dashboard.html">训练看板</a></li>
@@ -24,23 +48,57 @@
       <a href="#">更多 ▾</a>
       <div class="dropdown">
         <a href="replays.html">回放库</a>
-        <a href="help.html">帮助/原理</a>
+        <a href="help.html">帮助</a>
         <a href="about.html">关于</a>
       </div>
     </li>
   </ul>
+  <button class="back-btn" onclick="history.back()">← 返回</button>
 </header>
 
 <main class="container">
-  <h1>训练看板</h1>
-  <p style="color:#9db0c6">在“编辑器”页进行<b>竞速</b>或<b>训练</b>后，本页会从 <code>localStorage</code> 读取历史绘制曲线。</p>
-  <canvas id="chart" height="120"></canvas>
-  <div id="stats"></div>
+  <h1>训练 & 对抗 数据看板</h1>
+  <p style="color:#9db0c6">
+    本页从浏览器 <code>localStorage</code> 中读取训练历史，自动汇总 <b>编辑器</b> 与 <b>对抗 Arena</b> 的对局数据并绘制曲线。
+  </p>
+
+  <section>
+    <h2>编辑器 · 单人回合（ai_runs）</h2>
+    <p class="desc">来自 NavMesh 编辑器中“开始回合”的历史，用时越短越好。</p>
+    <div class="chart-row">
+      <canvas id="chartSolo" height="120"></canvas>
+      <div class="stats-box" id="statsSolo"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>编辑器 · A/B 竞速（ai_dual_runs）</h2>
+    <p class="desc">来自编辑器中 A/B 竞速的历史，展示两名智能体在相同场景下的用时对比。</p>
+    <div class="chart-row">
+      <canvas id="chartDual" height="120"></canvas>
+      <div class="stats-box" id="statsDual"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>对抗 Arena · 积分对局（arena_runs）</h2>
+    <p class="desc">来自 Arena 对抗页面的对局结果，综合考虑<b>耗时、路径、探索、陷阱</b>等因素计算积分。</p>
+    <div class="chart-row">
+      <canvas id="chartArenaScore" height="120"></canvas>
+      <div class="stats-box" id="statsArena"></div>
+    </div>
+
+    <!-- 新增：按难度聚合的平均耗时 / 路径长度 / 对局数量分布 -->
+    <div class="chart-row" style="margin-top:16px">
+      <canvas id="chartArenaTimeByDiff" height="120"></canvas>
+      <canvas id="chartArenaPathByDiff" height="120"></canvas>
+      <canvas id="chartArenaDiffCount" height="120"></canvas>
+    </div>
+  </section>
 </main>
 
 <footer class="footer">© 2025 AI Race Demo</footer>
 
-<!-- Chart.js 官方推荐可用 CDN 引入，也可 npm 安装后打包使用。:contentReference[oaicite:7]{index=7} -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script type="module" src="/src/dashboard.js"></script>
 </body>
