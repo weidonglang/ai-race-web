@@ -595,3 +595,6 @@ export function getMazeMeta () {
   }
 }
 export function getMazePathPoints () { return mazePathPoints }
+export function getMazeNeighbors () {
+  return mazeNeighbors
+}

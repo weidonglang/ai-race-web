@@ -53,8 +53,12 @@ const domRL = {
   btnStart: $('btnRlStart'),
   btnPause: $('btnRlPause'),
   btnStepEp: $('btnRlStepEp'),
-  btnReset: $('btnRlReset')
+  btnReset: $('btnRlReset'),
+  // 新增：训练速度滑块 + 显示文本
+  speedSlider: $('rlSpeed'),
+  speedValue: $('rlSpeedValue')
 }
+
 
 /* ---------- 基本工具 ---------- */
 const fmtTimeSec = (sec) => `${sec.toFixed(2)} s`
@@ -69,6 +73,7 @@ const controls = core.controls
 const loadRandomMaze = core.loadRandomMaze
 const getMazeMeta = core.getMazeMeta
 const gridToWorld = core.gridToWorld
+const getMazeNeighbors = core.getMazeNeighbors  
 
 if (!scene || !camera || !renderer || !controls || !loadRandomMaze || !getMazeMeta || !gridToWorld) {
   console.error('[Arena] arena_core.js 必要导出缺失，请检查 scene/camera/renderer/controls/loadRandomMaze/getMazeMeta/gridToWorld 是否正确导出。')
@@ -584,7 +589,6 @@ if (domArena.btnClear) {
 
 const rlAgent = createRlAgent(() => {
   const meta = getMazeMeta && getMazeMeta()
-  // 如果还没有迷宫，或者缺少关键字段，就告诉 RL：当前没有可用迷宫
   if (
     !meta ||
     meta.width == null ||
@@ -595,6 +599,38 @@ const rlAgent = createRlAgent(() => {
     return null
   }
 
+  // 尝试从 arena_core 拿邻接表
+  const neighbors = getMazeNeighbors && getMazeNeighbors()
+  let edgeMask = null
+
+  if (
+    neighbors &&
+    Array.isArray(neighbors) &&
+    neighbors.length === meta.height &&
+    Array.isArray(neighbors[0]) &&
+    neighbors[0].length === meta.width
+  ) {
+    const w = meta.width
+    const h = meta.height
+    // edgeMask[k][i][action]，action: 0=上,1=下,2=左,3=右
+    edgeMask = Array.from({ length: h }, () =>
+      Array.from({ length: w }, () => [false, false, false, false])
+    )
+
+    for (let k = 0; k < h; k++) {
+      for (let i = 0; i < w; i++) {
+        const neigh = (neighbors[k] && neighbors[k][i]) || []
+        const mask = edgeMask[k][i]
+        for (const n of neigh) {
+          if (n.i === i && n.k === k - 1) mask[0] = true // 可以向上走
+          else if (n.i === i && n.k === k + 1) mask[1] = true // 可以向下走
+          else if (n.i === i - 1 && n.k === k) mask[2] = true // 可以向左走
+          else if (n.i === i + 1 && n.k === k) mask[3] = true // 可以向右走
+        }
+      }
+    }
+  }
+
   return {
     id: meta.id || null,
     width: meta.width,
@@ -602,14 +638,20 @@ const rlAgent = createRlAgent(() => {
     start: { i: meta.start.i, k: meta.start.k },
     end:   { i: meta.end.i,   k: meta.end.k },
     traps: meta.traps || meta.trapCells || [],
-    blocks: meta.blocks || meta.blockCells || []
+    blocks: meta.blocks || meta.blockCells || [],
+    edgeMask                    // 新增：传给 RL 核心，可能是 null
   }
 })
 
 
 let rlRunning = false
 let rlPaused = false
-const RL_STEPS_PER_FRAME = 24
+
+// 每一步之间的时间间隔（毫秒），数值越大越慢，越小越快。
+// 默认先给个中等速度，后面会被滑块覆盖。
+let rlStepIntervalMs = 120
+// 时间累积器：根据每帧 dt 决定何时“走一步”
+let rlAccumMs = 0
 
 const rlGeo = new THREE.SphereGeometry(0.25, 24, 16)
 const rlMat = new THREE.MeshStandardMaterial({ color: 0xa855f7 })
@@ -617,6 +659,7 @@ const rlMesh = new THREE.Mesh(rlGeo, rlMat)
 rlMesh.castShadow = true
 rlMesh.visible = false
 scene.add(rlMesh)
+
 
 function syncRlMeshPosition () {
   const vis = rlAgent.getVisualState()
@@ -676,6 +719,53 @@ if (domRL.btnReset) {
   }
 }
 
+// RL 速度滑块（1~100）=> 映射为“每秒训练步数 speed ∈ [0.75, 500]”
+// RL 速度滑块（1~100）=> 映射为“每秒训练步数 speed ∈ [0.75, 500]”，用对数插值更好调
+if (domRL.speedSlider && domRL.speedValue) {
+  domRL.speedSlider.min = '1'
+  domRL.speedSlider.max = '100'
+
+  // 默认放中间，看着比较舒服
+  domRL.speedSlider.value = '50'
+
+  const updateRlSpeedFromSlider = () => {
+    const raw = Number(domRL.speedSlider.value) || 1
+    const v = clamp(raw, 1, 100)
+
+    // 希望的步/秒范围：1 档 ≈ 0.75，100 档 ≈ 500
+    const MIN_SPEED = 5  // 步/秒（非常慢，适合观看）
+    const MAX_SPEED = 5000  // 步/秒（极快，适合刷训练）
+
+    // 先把滑条值压成 0~1
+    const t = (v - 1) / 99
+
+    // 在 log 空间线性插值 => 速度在数值空间是指数变化，方便覆盖大范围又好调
+    const logMin = Math.log(MIN_SPEED)
+    const logMax = Math.log(MAX_SPEED)
+    const speed = Math.exp(logMin + (logMax - logMin) * t)
+
+    // 主循环里 rlAccumMs += dt * 10000，
+    // 所以 interval = 10000 / speed 可以让 speed ≈ 实际步/秒。
+    rlStepIntervalMs = 10000 / speed
+
+    // 数字显示：显示“步/秒”，而不是原始 1~100 档位
+    let text
+    if (speed < 10) text = speed.toFixed(2)      // 0.x ~ 9.x 看两位小数
+    else if (speed < 100) text = speed.toFixed(1) // 10~99.x 看一位小数
+    else text = speed.toFixed(0)                  // 100 以上直接整数
+    domRL.speedValue.textContent = text + ' steps/s'
+  }
+
+  // 初始化一次
+  updateRlSpeedFromSlider()
+
+  // 滑块变动时更新
+  domRL.speedSlider.addEventListener('input', updateRlSpeedFromSlider)
+}
+
+
+
+
 /* ---------- 主渲染循环 ---------- */
 
 let lastTime = performance.now()
@@ -688,8 +778,22 @@ function loop (now) {
     updateArenaEpisode(dt)
   }
 
+  // RL 训练：按“时间间隔”走一步，而不是每帧走很多步，
+  // 方便你用滑块把一个 Episode 放慢到肉眼可见。
   if (rlRunning && !rlPaused) {
-    rlAgent.trainSteps(RL_STEPS_PER_FRAME)
+    // 累积时间（毫秒）
+    rlAccumMs += dt * 10000
+
+    // 安全下限，避免极端情况下 interval 过小导致 while 死循环
+    const interval = Math.max(rlStepIntervalMs, 5)
+
+    // 每跨过一个 interval，就训练一步（trainSteps(1)）
+    while (rlAccumMs >= interval) {
+      rlAccumMs -= interval
+      rlAgent.trainSteps(1)
+    }
+
+    // 每帧更新可视化和面板
     syncRlMeshPosition()
     updateRlPanel()
   }
@@ -699,6 +803,7 @@ function loop (now) {
 
   requestAnimationFrame(loop)
 }
+
 
 updateMazePanel()
 updateArenaPanel()

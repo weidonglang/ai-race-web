@@ -128,18 +128,34 @@
       </div>
 
       <div class="arena-card arena-controls">
-        <h2>RL 控制</h2>
-        <button id="btnRlStart">开始 RL 训练</button>
-        <button id="btnRlPause">暂停 / 继续</button>
-        <button id="btnRlStepEp">单步：跑 1 局</button>
-        <button id="btnRlReset">重置 Q 表</button>
-        <p class="arena-muted" style="margin-top:8px;">
-          RL 智能体使用 Q-learning 在当前迷宫上探索：起点出发，
-          每走一步有时间惩罚，踩红色陷阱会直接死亡并重开一局，
-          到达终点获得高奖励。随着局数增加，你会看到其成功率上升、
-          平均步数下降，并且在 3D 场景中明显减少“乱撞”和踩雷。
-        </p>
-      </div>
+  <h2>RL 控制</h2>
+  <button id="btnRlStart">开始 RL 训练</button>
+  <button id="btnRlPause">暂停 / 继续</button>
+  <button id="btnRlStepEp">单步：跑 1 局</button>
+  <button id="btnRlReset">重置 Q 表</button>
+
+  <!-- 新增：速度调节滑块 -->
+  <div class="arena-kv" style="margin-top:8px; align-items:center; gap:8px;">
+    <label for="rlSpeed" style="flex:0 0 auto;">训练速度</label>
+    <input
+      id="rlSpeed"
+      type="range"
+      min="1"
+      max="100"
+      value="24"
+      style="flex:1 1 auto;"
+    />
+    <span id="rlSpeedValue" style="flex:0 0 auto; width:3em; text-align:right;">24</span>
+  </div>
+
+  <p class="arena-muted" style="margin-top:8px;">
+    RL 智能体使用 Q-learning 在当前迷宫上探索：起点出发，
+    每走一步有时间惩罚，踩红色陷阱会直接死亡并重开一局，
+    到达终点获得高奖励。你可以通过上面的「训练速度」滑块
+    调整每帧训练的步数（1–100）。
+  </p>
+</div>
+
       <!-- ⬆⬆⬆ RL 面板结束 ⬆⬆⬆ -->
 
     </aside>
