@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>训练看板 · AI Race</title>
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <!-- 这里加一点局部样式，只负责 Dashboard 布局和小组件 -->
+  <style>
+    .back-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #2c3342;
+      background: #1a2130;
+      color: #dce5f0;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .back-btn:hover { background: #233049; }
+
+    main.container section {
+      margin-top: 24px;
+      padding: 16px 16px 20px;
+      border-radius: 14px;
+      border: 1px solid #1c2533;
+      background: #101621;
+    }
+
+    main.container section h2 {
+      margin: 0 0 6px 0;
+      font-size: 18px;
+    }
+
+    main.container section p.desc {
+      margin: 0 0 10px 0;
+      color: #9db0c6;
+      font-size: 13px;
+    }
+
+    .chart-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .chart-row canvas {
+      max-width: 480px;
+      min-width: 260px;
+      background: #0b0f18;
+      border-radius: 12px;
+      padding: 8px;
+    }
+
+    .stats-box {
+      flex: 1;
+      min-width: 220px;
+      font-size: 13px;
+      color: #cbd5e1;
+    }
+
+    .stats-box ul {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+
+    .stats-box li { margin: 2px 0; }
+
+    .stats-box code {
+      color: #93c5fd;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 顶部导航，与其他页面保持一致 -->
+  <header>
+    <a href="index.html" style="font-weight:700">AI Race</a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+    <!-- 返回按钮：如果有浏览历史就后退，否则回到首页 -->
+    <button class="back-btn"
+            onclick="if (history.length > 1) history.back(); else location.href='index.html'">
+      ← 返回
+    </button>
+  </header>
+
+  <main class="container">
+    <h1>训练看板 · 双智能体 RL 对比</h1>
+    <p style="color:#9db0c6">
+      本页从浏览器
+      <code>localStorage('arena_rl_dual_stats')</code>
+      中读取 <b>双智能体 RL 训练过程</b> 的快照，
+      对比两个智能体在同一 3D 迷宫环境下：谁更快学会到达终点、
+      谁走出的路径更接近理论最短。
+    </p>
+
+    <!-- 文本统计总览：平均成功率 / 路径效率 / 首次 100% 回合数 / 领先者 -->
+    <section>
+      <h2>训练总览 · 谁学得更快、走得更短？</h2>
+      <p class="desc">
+        这里汇总训练期间的平均成功率、最近窗口的路径效率（平均步数 / 最短步数），
+        以及首次达到“接近 100% 成功率”的回合数，用于整体判断 A / B 两个智能体的表现。
+      </p>
+      <div class="stats-box" id="statsRlDual">
+        <!-- dashboard.js 会在这里填充统计文本 -->
+      </div>
+    </section>
+
+    <!-- 三张折线图：成功率 / 步数 / epsilon -->
+    <section>
+      <h2>训练曲线 · 成功率 / 步数 / 探索率</h2>
+      <p class="desc">
+        三张曲线分别展示：
+        (1) A/B 成功率随训练进度的变化；
+        (2) 平均步数相对于“理论最短步数”的收敛情况；
+        (3) epsilon（探索率）随训练过程的衰减。
+      </p>
+
+      <div class="chart-row">
+        <!-- 成功率曲线 -->
+        <canvas id="chartRlSucc"  height="140"></canvas>
+        <!-- 步数 vs 最短步数 -->
+        <canvas id="chartRlSteps" height="140"></canvas>
+      </div>
+
+      <div class="chart-row" style="margin-top:16px">
+        <!-- epsilon 衰减 -->
+        <canvas id="chartRlEps"   height="140"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">© 2025 AI Race Demo</footer>
+
+  <!-- Chart.js CDN，用于绘制统计曲线 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- 本页主逻辑：从 localStorage 读取数据，绘制图表并填充文字说明 -->
+  <script type="module" src="/src/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Small Make 3D - Voxel Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            color: white;
+            font-family: 'Inter', 'Arial', sans-serif;
+        }
+
+        /* This overlay is used to lock the mouse pointer */
+        #blocker {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #instructions {
+            width: 50%;
+            max-width: 400px;
+            padding: 24px;
+            background-color: rgba(20, 20, 20, 0.8);
+            border-radius: 16px;
+            text-align: center;
+            font-size: 16px;
+            cursor: pointer;
+            border: 1px solid #444;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        #instructions h2 {
+            margin-top: 0;
+            color: #eee;
+        }
+
+        #instructions p {
+            margin-bottom: 16px;
+            line-height: 1.5;
+        }
+
+        #instructions .controls {
+            text-align: left;
+            margin-top: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #instructions .controls p {
+            margin: 8px 0;
+        }
+        
+        #instructions .controls strong {
+            color: #87CEEB;
+            display: inline-block;
+            width: 80px;
+        }
+
+        /* This is the crosshair in the middle of the screen */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            border: 2px solid white;
+            border-radius: 50%; /* Changed to a dot for a cleaner look */
+            transform: translate(-50%, -50%);
+            mix-blend-mode: difference; /* Helps visibility on different colors */
+            pointer-events: none;
+            display: none; /* Hidden until controls are locked */
+        }
+
+        /* UI for selected block */
+        #hotbar {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.4);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: capitalize;
+            pointer-events: none;
+            display: none; /* Hidden until controls are locked */
+            text-align: center;
+            min-width: 120px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- UI Elements -->
+    <div id="blocker">
+        <div id="instructions">
+            <h2>Small Make 3D</h2>
+            <p>Click here to play</p>
+            <div class="controls">
+                <p><strong>Move:</strong> WASD</p>
+                <p><strong>Jump:</strong> SPACE</p>
+                <p><strong>Look:</strong> Mouse</p>
+                <p><strong>Remove:</strong> Left-Click</p>
+                <p><strong>Place:</strong> Right-Click</p>
+            </div>
+            <p style="margin-top: 20px; font-size: 12px;">Press 'ESC' to exit mouse lock.</p>
+        </div>
+    </div>
+    <div id="crosshair"></div>
+    <!-- This new element will show the selected block -->
+    <div id="hotbar">Wood</div>
+
+    <!-- Three.js Library -->
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/"
+        }
+    }
+    </script>
+    <!-- Tone.js Library for sound -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <!-- Main Game Logic -->
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // --- Core "Small Make" Framework Components ---
+        // We'll wrap our core game logic in an object to act as our "framework"
+        
+        const SmallMake = {
+            // Game State
+            scene: null,
+            camera: null,
+            renderer: null,
+            controls: null,
+            raycaster: null,
+            
+            // World
+            objects: [], // All collidable objects
+            voxelSize: 50,
+            worldSize: 20, // 20x20 grid
+            
+            // Player
+            playerHeight: 40,
+            velocity: new THREE.Vector3(),
+            direction: new THREE.Vector3(),
+            
+            // Movement Bools
+            moveForward: false,
+            moveBackward: false,
+            moveLeft: false,
+            moveRight: false,
+            canJump: false,
+            
+            // Timing
+            prevTime: performance.now(),
+            
+            // Materials
+            materials: {},
+            
+            // Hotbar / Inventory
+            selectedMaterialIndex: 0,
+            hotbarMaterials: ['wood', 'leaves', 'dirt', 'grass', 'stone'], // Added stone
+            
+            // Sound
+            sounds: {},
+
+            // --- Framework Methods ---
+            
+            /**
+             * Initializes the entire game scene, renderer, controls, and world.
+             */
+            init() {
+                // Get UI elements
+                const blocker = document.getElementById('blocker');
+                const instructions = document.getElementById('instructions');
+                const crosshair = document.getElementById('crosshair');
+                const hotbar = document.getElementById('hotbar');
+
+                // Scene
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x87CEEB); // Sky blue
+                this.scene.fog = new THREE.Fog(0x87CEEB, 0, 1000);
+
+                // Camera
+                this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 2000);
+                this.camera.position.y = this.voxelSize * 2 + this.playerHeight; // Start above the ground
+
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer({ antialias: true });
+                this.renderer.setPixelRatio(window.devicePixelRatio);
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                document.body.appendChild(this.renderer.domElement);
+
+                // Controls (First-Person Pointer Lock)
+                this.controls = new PointerLockControls(this.camera, document.body);
+                this.scene.add(this.controls.getObject()); // Add player capsule to scene
+
+                // Pointer Lock Event Listeners
+                instructions.addEventListener('click', () => this.controls.lock());
+                this.controls.addEventListener('lock', () => {
+                    instructions.style.display = 'none';
+                    blocker.style.display = 'none';
+                    crosshair.style.display = 'block';
+                    hotbar.style.display = 'block'; // Show hotbar
+                });
+                this.controls.addEventListener('unlock', () => {
+                    blocker.style.display = 'flex';
+                    instructions.style.display = '';
+                    crosshair.style.display = 'none';
+                    hotbar.style.display = 'none'; // Hide hotbar
+                });
+
+                // Raycaster (for block interaction and collisions)
+                this.raycaster = new THREE.Raycaster(new THREE.Vector3(), new THREE.Vector3(0, -1, 0), 0, 10);
+
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0x666666);
+                this.scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+                directionalLight.position.set(50, 200, 100);
+                directionalLight.castShadow = false; // Shadows are expensive
+                this.scene.add(directionalLight);
+                
+                // Generate Materials
+                this.generateMaterials();
+                
+                // Initialize Sounds
+                this.initSounds();
+                
+                // Generate World
+                this.generateWorld();
+                
+                // Input Event Listeners
+                document.addEventListener('keydown', (e) => this.onKeyDown(e));
+                document.addEventListener('keyup', (e) => this.onKeyUp(e));
+                document.addEventListener('mousedown', (e) => this.onMouseDown(e));
+                document.addEventListener('wheel', (e) => this.onMouseWheel(e)); // Add scroll wheel listener
+                
+                // Handle window resizing
+                window.addEventListener('resize', () => this.onWindowResize());
+
+                // Update UI initially
+                this.updateHotbarUI();
+
+                // Start the game loop
+                this.animate();
+            },
+
+            /**
+             * Creates and stores textures/materials for our voxels.
+             */
+            generateMaterials() {
+                const textureLoader = new THREE.TextureLoader();
+
+                // We use CanvasTexture to create self-contained textures without external files
+                const createVoxelTexture = (color, patternFn) => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = 64;
+                    canvas.height = 64;
+                    const context = canvas.getContext('2d');
+                    
+                    // Base color
+                    context.fillStyle = color;
+                    context.fillRect(0, 0, 64, 64);
+                    
+                    // Noise pattern
+                    if (patternFn) {
+                        patternFn(context);
+                    } else {
+                        // Default noise
+                        context.fillStyle = 'rgba(0,0,0,0.05)';
+                        for (let i = 0; i < 200; i++) {
+                            context.fillRect(Math.random() * 64, Math.random() * 64, 2, 2);
+                        }
+                    }
+                    
+                    const texture = new THREE.CanvasTexture(canvas);
+                    texture.magFilter = THREE.NearestFilter; // Pixelated, Minecraft-style
+                    texture.minFilter = THREE.NearestFilter;
+                    return new THREE.MeshLambertMaterial({ map: texture });
+                };
+
+                this.materials.grass = createVoxelTexture('#559022', (ctx) => {
+                    ctx.fillStyle = 'rgba(0,20,0,0.1)';
+                    for (let i = 0; i < 200; i++) {
+                        ctx.fillRect(Math.random() * 64, Math.random() * 64, 3, 3);
+                    }
+                });
+                
+                this.materials.dirt = createVoxelTexture('#8B4513', (ctx) => {
+                    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                    for (let i = 0; i < 200; i++) {
+                        ctx.fillRect(Math.random() * 64, Math.random() * 64, 4, 4);
+                    }
+                });
+                
+                this.materials.wood = createVoxelTexture('#704214', (ctx) => {
+                    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+                    for (let i = 0; i < 50; i++) {
+                        ctx.fillRect(Math.random() * 64, 0, 2, 64);
+                        ctx.fillRect(0, Math.random() * 64, 64, 2);
+                    }
+                });
+                
+                this.materials.leaves = createVoxelTexture('#006400', (ctx) => {
+                    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                    for (let i = 0; i < 200; i++) {
+                        ctx.beginPath();
+                        ctx.arc(Math.random() * 64, Math.random() * 64, Math.random() * 5 + 2, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                });
+
+                this.materials.stone = createVoxelTexture('#888888', (ctx) => {
+                    ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                    for (let i = 0; i < 300; i++) {
+                        ctx.fillRect(Math.random() * 64, Math.random() * 64, 2, 2);
+                    }
+                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                    for (let i = 0; i < 100; i++) {
+                        ctx.fillRect(Math.random() * 64, Math.random() * 64, 1, 1);
+                    }
+                });
+            },
+
+            /**
+             * Initializes the sound effects using Tone.js
+             */
+            initSounds() {
+                // Using simple synths to avoid external files
+                this.sounds.jump = new Tone.Synth({
+                    oscillator: { type: 'sine' },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0.1, release: 0.1 }
+                }).toDestination();
+                
+                this.sounds.place = new Tone.Synth({
+                    oscillator: { type: 'triangle' },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }
+                }).toDestination();
+
+                this.sounds.remove = new Tone.NoiseSynth({
+                    noise: { type: 'brown' },
+                    envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 }
+                }).toDestination();
+            },
+
+            /**
+             * Procedurally generates the voxel world grid and adds trees.
+             */
+            generateWorld() {
+                const vs = this.voxelSize;
+                const halfWorld = this.worldSize / 2;
+                
+                const geometry = new THREE.BoxGeometry(vs, vs, vs);
+
+                for (let x = -halfWorld; x < halfWorld; x++) {
+                    for (let z = -halfWorld; z < halfWorld; z++) {
+                        // Add a layer of dirt
+                        this.addVoxel(geometry, this.materials.dirt, x * vs, 0, z * vs);
+                        // Add a layer of grass on top
+                        this.addVoxel(geometry, this.materials.grass, x * vs, 1 * vs, z * vs);
+                        
+                        // Add some trees randomly
+                        if (x !== 0 && z !== 0 && Math.random() < 0.05) { // Avoid tree at spawn
+                            this.generateTree(geometry, x * vs, 2 * vs, z * vs);
+                        }
+                    }
+                }
+            },
+
+            /**
+             * Generates a simple tree at the given coordinates.
+             */
+            generateTree(geometry, x, y, z) {
+                const vs = this.voxelSize;
+                const treeHeight = Math.floor(Math.random() * 3) + 4; // 4-6 blocks high
+                
+                // Trunk
+                for (let i = 0; i < treeHeight; i++) {
+                    this.addVoxel(geometry, this.materials.wood, x, y + i * vs, z);
+                }
+                
+                // Leaves (a 3x3x3 or 5x5x3 blob)
+                const leafRadius = 2;
+                const leafTopY = y + treeHeight * vs;
+                
+                for (let lx = -leafRadius; lx <= leafRadius; lx++) {
+                    for (let ly = -1; ly <= 1; ly++) {
+                        for (let lz = -leafRadius; lz <= leafRadius; lz++) {
+                            // Don't overwrite the top of the trunk
+                            if (lx === 0 && lz === 0 && ly === -1) continue;
+                            // Create a rounded shape
+                            if (lx * lx + ly * ly * 2 + lz * lz > (leafRadius * leafRadius) - Math.random() * 2) continue;
+                            
+                            this.addVoxel(
+                                geometry, 
+                                this.materials.leaves, 
+                                x + lx * vs, 
+                                leafTopY + ly * vs, 
+                                z + lz * vs
+                            );
+                        }
+                    }
+                }
+            },
+            
+            /**
+             * Framework helper to create and add a single voxel to the world.
+             */
+            addVoxel(geometry, material, x, y, z) {
+                const voxel = new THREE.Mesh(geometry, material);
+                voxel.position.set(x, y, z);
+                voxel.name = "voxel"; // Identify blocks
+                this.scene.add(voxel);
+                this.objects.push(voxel);
+            },
+
+            /**
+             * The main game loop, called every frame.
+             */
+            animate() {
+                // Bind 'this' to keep context in requestAnimationFrame
+                requestAnimationFrame(() => this.animate());
+
+                const time = performance.now();
+                const delta = (time - this.prevTime) / 1000;
+
+                if (this.controls.isLocked === true) {
+                    // --- Physics and Movement ---
+                    this.raycaster.ray.origin.copy(this.controls.getObject().position);
+                    this.raycaster.ray.origin.y -= (this.playerHeight / 2); // Raycast from player's feet
+                    
+                    const intersections = this.raycaster.intersectObjects(this.objects, false);
+                    const onObject = intersections.length > 0 && intersections[0].distance < 5; // 5 is a small buffer
+
+                    // Apply gravity
+                    this.velocity.y -= 9.8 * this.voxelSize * delta; // 9.8 m/s^2 * 50 (voxelSize as 1m)
+
+                    // Stop falling if on object
+                    if (onObject === true) {
+                        this.velocity.y = Math.max(0, this.velocity.y);
+                        this.canJump = true;
+                        
+                        // Snap to top of block to prevent sinking
+                        const groundY = intersections[0].object.position.y + this.voxelSize / 2;
+                        const playerFeetY = this.controls.getObject().position.y - this.playerHeight / 2;
+                        
+                        // Only snap if slightly below, not if way above
+                        if (playerFeetY < groundY + 1) {
+                             this.controls.getObject().position.y = groundY + this.playerHeight / 2;
+                        }
+                    }
+
+                    // Movement damping (friction)
+                    this.velocity.x -= this.velocity.x * 10.0 * delta;
+                    this.velocity.z -= this.velocity.z * 10.0 * delta;
+
+                    // Get movement direction
+                    this.direction.z = Number(this.moveForward) - Number(this.moveBackward);
+                    this.direction.x = Number(this.moveRight) - Number(this.moveLeft);
+                    this.direction.normalize(); // Ensure consistent speed diagonally
+
+                    const moveSpeed = 400.0;
+                    if (this.moveForward || this.moveBackward) this.velocity.z -= this.direction.z * moveSpeed * delta;
+                    if (this.moveLeft || this.moveRight) this.velocity.x -= this.direction.x * moveSpeed * delta;
+
+                    // Apply movement
+                    this.controls.moveRight(-this.velocity.x * delta);
+                    this.controls.moveForward(-this.velocity.z * delta);
+                    
+                    // Apply vertical velocity (jump/gravity)
+                    this.controls.getObject().position.y += (this.velocity.y * delta); 
+                    
+                    // Simple collision with ground plane (in case player falls out of world)
+                    if (this.controls.getObject().position.y < -this.voxelSize * 10) {
+                        this.velocity.y = 0;
+                        this.controls.getObject().position.y = this.voxelSize * 2 + this.playerHeight;
+                        this.canJump = true;
+                    }
+                }
+
+                this.prevTime = time;
+                this.renderer.render(this.scene, this.camera);
+            },
+            
+            // --- Event Handlers ---
+
+            onKeyDown(event) {
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        this.moveForward = true;
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        this.moveLeft = true;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        this.moveBackward = true;
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        this.moveRight = true;
+                        break;
+                    case 'Space':
+                        if (this.canJump === true) {
+                            this.velocity.y += this.voxelSize * 6; // Jump height
+                            this.sounds.jump.triggerAttackRelease('C4', '8n');
+                        }
+                        this.canJump = false;
+                        break;
+                    // Hotbar selection with number keys
+                    case 'Key1':
+                        this.selectedMaterialIndex = 0;
+                        this.updateHotbarUI();
+                        break;
+                    case 'Key2':
+                        this.selectedMaterialIndex = 1;
+                        this.updateHotbarUI();
+                        break;
+                    case 'Key3':
+                        this.selectedMaterialIndex = 2;
+                        this.updateHotbarUI();
+                        break;
+                    case 'Key4':
+                        this.selectedMaterialIndex = 3;
+                        this.updateHotbarUI();
+                        break;
+                    case 'Key5':
+                        this.selectedMaterialIndex = 4;
+                        this.updateHotbarUI();
+                        break;
+                }
+            },
+
+            onKeyUp(event) {
+                switch (event.code) {
+                    case 'ArrowUp':
+                    case 'KeyW':
+                        this.moveForward = false;
+                        break;
+                    case 'ArrowLeft':
+                    case 'KeyA':
+                        this.moveLeft = false;
+                        break;
+                    case 'ArrowDown':
+                    case 'KeyS':
+                        this.moveBackward = false;
+                        break;
+                    case 'ArrowRight':
+                    case 'KeyD':
+                        this.moveRight = false;
+                        break;
+                }
+            },
+            
+            onMouseDown(event) {
+                if (!this.controls.isLocked) return;
+                
+                event.preventDefault();
+                
+                // Start audio context on first user interaction
+                if (Tone.context.state !== 'running') {
+                    Tone.start();
+                }
+                
+                // Use a different raycaster for block interaction, pointing from camera
+                const interactionRaycaster = new THREE.Raycaster();
+                interactionRaycaster.setFromCamera({ x: 0, y: 0 }, this.camera); // From center of screen
+                
+                const intersects = interactionRaycaster.intersectObjects(this.objects, false);
+
+                if (intersects.length > 0) {
+                    const intersect = intersects[0];
+                    
+                    // Max distance check
+                    if (intersect.distance > this.voxelSize * 3) return; 
+
+                    if (event.button === 0) { 
+                        // Left-click: Remove block
+                        this.removeVoxel(intersect.object);
+                        this.sounds.remove.triggerAttackRelease('8n');
+                    } else if (event.button === 2) { 
+                        // Right-click: Place block
+                        const newPos = intersect.object.position.clone();
+                        newPos.add(intersect.face.normal.multiplyScalar(this.voxelSize));
+                        
+                        // Check if player is standing in the new block's space
+                        if (!this.isPlayerColliding(newPos)) {
+                            // Get material from hotbar
+                            const materialKey = this.hotbarMaterials[this.selectedMaterialIndex];
+                            const material = this.materials[materialKey];
+
+                            this.addVoxel(
+                                intersect.object.geometry, // Reuse geometry
+                                material, // Use selected material
+                                newPos.x, newPos.y, newPos.z
+                            );
+                            this.sounds.place.triggerAttackRelease('G3', '8n');
+                        }
+                    }
+                }
+            },
+            
+            /**
+                 * Helper to remove a voxel from the scene and objects list.
+             */
+            removeVoxel(object) {
+                this.scene.remove(object);
+                
+                // Remove from objects array
+                const index = this.objects.indexOf(object);
+                if (index > -1) {
+                    this.objects.splice(index, 1);
+                }
+                
+                // Optional: dispose of geometry/material if no longer needed
+                // object.geometry.dispose();
+                // object.material.dispose();
+            },
+            
+            /**
+             * Handles the mouse scroll wheel for hotbar selection.
+             */
+            onMouseWheel(event) {
+                if (!this.controls.isLocked) return;
+                
+                // event.deltaY > 0 is scroll down, < 0 is scroll up
+                if (event.deltaY > 0) {
+                    this.selectedMaterialIndex++;
+                } else {
+                    this.selectedMaterialIndex--;
+                }
+                
+                // Wrap around the index
+                const len = this.hotbarMaterials.length;
+                this.selectedMaterialIndex = (this.selectedMaterialIndex % len + len) % len;
+                
+                this.updateHotbarUI();
+            },
+
+            /**
+             * Updates the hotbar UI element to show the selected block.
+             */
+            updateHotbarUI() {
+                const hotbar = document.getElementById('hotbar');
+                if (hotbar) {
+                    hotbar.textContent = this.hotbarMaterials[this.selectedMaterialIndex];
+                }
+            },
+
+            /**
+             * Simple AABB check to see if the player is inside a new block's position.
+             */
+            isPlayerColliding(voxelPos) {
+                const playerPos = this.controls.getObject().position;
+                const vs = this.voxelSize;
+                const halfPlayer = this.playerHeight / 2; // Use height as a rough bounding box
+                
+                const playerBox = {
+                    min: {
+                        x: playerPos.x - halfPlayer * 0.5,
+                        y: playerPos.y - halfPlayer,
+                        z: playerPos.z - halfPlayer * 0.5
+                    },
+                    max: {
+                        x: playerPos.x + halfPlayer * 0.5,
+                        y: playerPos.y + halfPlayer,
+                        z: playerPos.z + halfPlayer * 0.5
+                    }
+                };
+
+                const voxelBox = {
+                    min: { x: voxelPos.x - vs/2, y: voxelPos.y - vs/2, z: voxelPos.z - vs/2 },
+                    max: { x: voxelPos.x + vs/2, y: voxelPos.y + vs/2, z: voxelPos.z + vs/2 }
+                };
+
+                // AABB collision check
+                return (
+                    playerBox.min.x <= voxelBox.max.x && playerBox.max.x >= voxelBox.min.x &&
+                    playerBox.min.y <= voxelBox.max.y && playerBox.max.y >= voxelBox.min.y &&
+                    playerBox.min.z <= voxelBox.max.z && playerBox.max.z >= voxelBox.min.z
+                );
+            },
+
+            onWindowResize() {
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        };
+
+        // --- Start the Game ---
+        SmallMake.init();
+
+    </script>
+</body>
+</html>
