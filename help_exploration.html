@@ -1,0 +1,389 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ε-贪心探索策略与衰减 · AI Race</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <style>
+    main.doc-main {
+      margin-top: 18px;
+      margin-bottom: 40px;
+    }
+
+    .doc-hero {
+      border-radius: 20px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(96, 165, 250, 0.22), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(244, 114, 182, 0.22), transparent 55%),
+        #020617;
+      border: 1px solid #1f2937;
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .doc-hero h1 {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+      letter-spacing: 0.03em;
+    }
+
+    .doc-hero p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+    }
+
+    .doc-hero strong {
+      color: #f9a8d4;
+    }
+
+    .doc-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: #9ca3af;
+    }
+
+    .doc-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .doc-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe, #60a5fa);
+      box-shadow: 0 0 8px rgba(96, 165, 250, 0.9);
+    }
+
+    .doc-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 0.55s ease-out,
+        transform 0.55s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .doc-section::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 2px;
+      width: 100%;
+      background: linear-gradient(
+        to right,
+        #111827 0,
+        #3b82f6 18%,
+        #22d3ee 45%,
+        #ec4899 75%,
+        #111827 100%
+      );
+      transform-origin: left center;
+      transform: scaleX(0);
+      opacity: 0.8;
+      transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .doc-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .doc-section.is-visible::before {
+      transform: scaleX(1);
+    }
+
+    .doc-section h2 {
+      font-size: 1.08rem;
+      margin-bottom: 6px;
+    }
+
+    .doc-section h3 {
+      font-size: 0.98rem;
+      margin: 8px 0 4px;
+    }
+
+    .doc-section p {
+      font-size: 0.93rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+      margin: 4px 0;
+    }
+
+    .doc-section ul {
+      margin: 4px 0 4px 18px;
+      padding-left: 0;
+      font-size: 0.92rem;
+      line-height: 1.9;
+      color: #d1d5db;
+    }
+
+    .doc-note {
+      font-size: 0.84rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    .doc-inline-code {
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85em;
+    }
+
+    @media (max-width: 720px) {
+      .doc-hero {
+        padding: 16px 14px 14px;
+      }
+    }
+  </style>
+
+  <!-- 返回按钮统一样式（与文档主题色呼应） -->
+  <style>
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--doc-accent, #38bdf8) 55%, #1f2937 45%);
+      background: linear-gradient(120deg, var(--doc-accent, #38bdf8), var(--doc-accent-2, #a855f7));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .back-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.4);
+    }
+    .back-btn:active{
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.32);
+    }
+  </style>
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <a href="index.html" class="brand">
+      <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+      <span class="brand-text">AI Race</span>
+    </a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+        <button class="back-btn" onclick="if (history.length > 1) history.back(); else location.href='index.html'">返回</button>
+  </div>
+</header>
+
+<main class="container doc-main">
+  <section class="doc-hero">
+    <h1>ε-贪心探索策略与衰减</h1>
+    <p>
+      在 Q-learning 中，我们既希望<strong>利用</strong>当前最好的策略，
+      又希望持续<strong>探索</strong>新的走法。
+      ε-贪心（epsilon-greedy）就是最经典的一种折中方案。
+    </p>
+    <p>
+      本页介绍 ε-贪心的基本思想、常见的 ε 衰减方式，以及它对收敛速度的影响。
+    </p>
+    <div class="doc-hero-meta">
+      <span class="doc-pill">
+        <span class="doc-pill-dot"></span> 关键词：exploration / exploitation / ε-greedy
+      </span>
+      <span class="doc-pill">关联页面：help_qlearning.html / rl.html</span>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2>1. 探索 vs. 利用：经典矛盾</h2>
+    <p>
+      在任何一个决策过程中，都存在「探索–利用（exploration vs. exploitation）」的冲突：
+    </p>
+    <ul>
+      <li><strong>利用：</strong>根据当前 Q 表，永远选 Q 值最大的动作，确保短期回报最高；</li>
+      <li><strong>探索：</strong>刻意尝试一些次优甚至未知动作，可能会发现更好的长期策略。</li>
+    </ul>
+    <p>
+      如果一直只利用当前最优动作，可能会<strong>陷入局部最优</strong>；
+      如果过度探索，又会导致<strong>学习速度很慢</strong>。
+      ε-贪心就是给这个矛盾设定一个简单、可控的比例。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>2. ε-贪心策略的定义</h2>
+    <p>
+      ε-贪心策略可以用一句话概括：</p>
+    <p>
+      <span class="doc-inline-code">
+        以概率 1 − ε 选择当前 Q 值最大的动作；以概率 ε 随机选一个动作。
+      </span>
+    </p>
+    <p>具体实现步骤：</p>
+    <ul>
+      <li>生成一个 0 到 1 之间的随机数 <span class="doc-inline-code">u</span>；</li>
+      <li>如果 <span class="doc-inline-code">u &lt; ε</span>：随机选择一个动作（探索）；</li>
+      <li>否则：选择 Q 值最大的动作（利用）。</li>
+    </ul>
+    <p>
+      这样，即使某个动作当前看来不是最优，也仍然有 ε 的概率被尝试到，
+      为「翻盘」留下机会。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>3. ε 的初始值与最小值</h2>
+    <p>通常会设置两个参数：</p>
+    <ul>
+      <li><strong>初始 ε：</strong>例如 1.0 或 0.9，表示一开始几乎完全靠探索；</li>
+      <li><strong>最小 ε：</strong>例如 0.05 或 0.1，表示后期仍然保留少量随机性，防止「过早僵化」。</li>
+    </ul>
+    <p>
+      在训练曲线中，你会看到：随着 ε 的减小，
+      智能体从「疯狂乱走」逐渐变成「沿着一条固定路线前进」。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>4. 常见的 ε 衰减方式</h2>
+    <p>在实际实现中，ε 不会一直保持不变，而是随 Episode 进行衰减。</p>
+
+    <h3>4.1 线性衰减</h3>
+    <p>
+      设初始值为 <span class="doc-inline-code">ε_start</span>，最小值为
+      <span class="doc-inline-code">ε_min</span>，
+      在前 <span class="doc-inline-code">N</span> 个 Episode 里线性下降：
+    </p>
+    <p>
+      <span class="doc-inline-code">
+        ε_t = max(ε_min, ε_start − k · t)
+      </span>
+    </p>
+    <p>其中 <span class="doc-inline-code">k</span> 为常数步长。</p>
+
+    <h3>4.2 指数衰减</h3>
+    <p>用一个小于 1 的衰减系数：</p>
+    <p>
+      <span class="doc-inline-code">
+        ε_t = ε_min + (ε_start − ε_min) · exp(−k · t)
+      </span>
+    </p>
+    <p>
+      指数衰减前期下降较快，后期趋于平缓，
+      适合「前期要大胆探索，后期慢慢稳定下来」的场景。
+    </p>
+
+    <h3>4.3 分段衰减 / 手动 schedule</h3>
+    <p>
+      在教学或实验中，也可以使用简单的分段策略：
+      比如前 1000 局用较大的 ε，中间逐渐减小，最后固定在一个很小的值。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>5. ε 对收敛速度和效果的影响</h2>
+    <p>
+      ε 的衰减速度会显著影响到 Q-learning 的「收敛曲线」：
+    </p>
+    <ul>
+      <li><strong>ε 衰减太快：</strong>
+        前期探索不足，容易卡在局部最优策略，后续很难翻身；</li>
+      <li><strong>ε 衰减太慢：</strong>
+        长时间保持高随机性，学习速度会很慢，训练曲线波动很大；</li>
+      <li><strong>合理的 ε 曲线：</strong>
+        前期大探测、后期小微调，既能发现好路线，又能稳定利用。</li>
+    </ul>
+    <p class="doc-note">
+      在 RL Demo 中，可以尝试修改 ε 的起始值和衰减速度，
+      对比不同设置下「平均奖励 / 平均路径长度」的收敛情况。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>6. 与奖励函数、学习率的协同</h2>
+    <p>
+      ε 不是单独起作用的，它与奖励函数和学习率一起决定训练效果：
+    </p>
+    <ul>
+      <li>奖励函数设计得越「清晰」，智能体越容易从探索中获得有用信息；</li>
+      <li>学习率 α 决定每次更新的力度，配合 ε 才能既敏感又稳定；</li>
+      <li>在对抗场景中，还可以为不同智能体设置不同的 ε 曲线，观察风格差异。</li>
+    </ul>
+    <p class="doc-note">
+      在报告里，可以用一张三维表或对照表，总结
+      「ε、α、奖励系数」对最终策略的影响，体现本项目的实验价值。
+    </p>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sections = document.querySelectorAll('.doc-section');
+
+    if (!('IntersectionObserver' in window)) {
+      sections.forEach(s => s.classList.add('is-visible'));
+      return;
+    }
+
+    const obs = new IntersectionObserver((entries, observer) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    sections.forEach(sec => obs.observe(sec));
+  });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,403 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>迷宫网格世界建模说明 · AI Race</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <!-- 本页局部样式：文档页 + 滚动淡入 + 顶部彩色线 -->
+  <style>
+    main.doc-main {
+      margin-top: 18px;
+      margin-bottom: 40px;
+    }
+
+    .doc-hero {
+      border-radius: 20px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(129, 140, 248, 0.18), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(56, 189, 248, 0.18), transparent 55%),
+        #020617;
+      border: 1px solid #1f2937;
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .doc-hero h1 {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+      letter-spacing: 0.03em;
+    }
+
+    .doc-hero p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+    }
+
+    .doc-hero strong {
+      color: #a5b4fc;
+    }
+
+    .doc-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: #9ca3af;
+    }
+
+    .doc-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .doc-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #ecfeff, #22d3ee);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+    }
+
+    /* 通用 section + 顶部渐变色线 + 淡入 */
+    .doc-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 0.55s ease-out,
+        transform 0.55s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .doc-section::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 2px;
+      width: 100%;
+      background: linear-gradient(
+        to right,
+        #111827 0,
+        #22d3ee 18%,
+        #38bdf8 40%,
+        #a855f7 75%,
+        #111827 100%
+      );
+      transform-origin: left center;
+      transform: scaleX(0);
+      opacity: 0.8;
+      transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .doc-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .doc-section.is-visible::before {
+      transform: scaleX(1);
+    }
+
+    .doc-section h2 {
+      font-size: 1.08rem;
+      margin-bottom: 6px;
+    }
+
+    .doc-section h3 {
+      font-size: 0.98rem;
+      margin: 8px 0 4px;
+    }
+
+    .doc-section p {
+      font-size: 0.93rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+      margin: 4px 0;
+    }
+
+    .doc-section ul {
+      margin: 4px 0 4px 18px;
+      padding-left: 0;
+      font-size: 0.92rem;
+      line-height: 1.9;
+      color: #d1d5db;
+    }
+
+    .doc-note {
+      font-size: 0.84rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    .doc-inline-code {
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85em;
+    }
+
+    @media (max-width: 720px) {
+      .doc-hero {
+        padding: 16px 14px 14px;
+      }
+    }
+  </style>
+
+  <!-- 返回按钮统一样式（与文档主题色呼应） -->
+  <style>
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--doc-accent, #38bdf8) 55%, #1f2937 45%);
+      background: linear-gradient(120deg, var(--doc-accent, #38bdf8), var(--doc-accent-2, #a855f7));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .back-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.4);
+    }
+    .back-btn:active{
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.32);
+    }
+  </style>
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <a href="index.html" class="brand">
+      <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+      <span class="brand-text">AI Race</span>
+    </a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+        <button class="back-btn" onclick="if (history.length > 1) history.back(); else location.href='index.html'">返回</button>
+  </div>
+</header>
+
+<main class="container doc-main">
+  <section class="doc-hero">
+    <h1>迷宫网格世界建模说明</h1>
+    <p>
+      本页说明：在 AI Race 中，我们如何把 3D 迷宫场景转化为一个 <strong>二维网格世界</strong>，
+      并进一步映射到强化学习的「状态–动作空间」。
+    </p>
+    <p>
+      你可以把它理解为：<strong>上面是 3D 场景给人看的，下面是离散网格给 AI 看的</strong>，
+      两者始终保持同步。
+    </p>
+    <div class="doc-hero-meta">
+      <span class="doc-pill">
+        <span class="doc-pill-dot"></span> 关键词：Grid World / 状态空间 / 迷宫建模
+      </span>
+      <span class="doc-pill">关联页面：arena.html / rl.html / help_qlearning.html</span>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2>1. 从 3D 迷宫到 2D 网格</h2>
+    <p>
+      Arena 中看到的是一个 3D 迷宫：地板、墙体、装饰、灯光……
+      但对于强化学习智能体来说，它只关心：「<strong>我现在在哪一个格子</strong>」。
+    </p>
+    <p>
+      因此，我们会对 3D 场景做一次<strong>平面投影 + 网格划分</strong>：
+    </p>
+    <ul>
+      <li>把整个迷宫投影到地面平面（俯视图）；</li>
+      <li>把平面均匀划分为 <span class="doc-inline-code">N × M</span> 个小格子；</li>
+      <li>检查每个格子是否与墙体 / 障碍物重叠，得到「可走 / 不可走」标记；</li>
+      <li>再结合起点、终点、检查点信息，构成强化学习用的网格世界。</li>
+    </ul>
+    <p class="doc-note">
+      这个过程与前一页介绍的 NavMesh 很相似，只不过这里我们更强调
+      「按行列编号的离散网格」，方便用数组来存储和运算。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>2. 状态（State）的定义</h2>
+    <p>
+      在网格世界中，每一个<strong>可走格子</strong>通常会对应一个状态：
+    </p>
+    <ul>
+      <li>最直接的定义是：<span class="doc-inline-code">s = (row, col)</span>；</li>
+      <li>实现上可以压缩成一个一维索引：<span class="doc-inline-code">id = row * cols + col</span>；</li>
+      <li>对 Q-learning 来说，只要这个索引是唯一的，就可以作为数组下标。</li>
+    </ul>
+    <p>
+      此外，我们还可以在状态上附加一些语义标签，例如：
+    </p>
+    <ul>
+      <li><strong>起点状态</strong>：episode 开始时的初始位置；</li>
+      <li><strong>终点状态</strong>：智能体到达后获得较大正奖励，episode 结束；</li>
+      <li><strong>陷阱状态</strong>：落入后给出大量惩罚，可选结束 episode；</li>
+      <li><strong>检查点状态</strong>：经过时给出小奖励，鼓励经过关键区域。</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>3. 动作（Action）的定义</h2>
+    <p>
+      为了让智能体在网格上移动，我们需要定义一组离散动作。
+      在本项目中，通常采用最经典的四方向动作：
+    </p>
+    <ul>
+      <li><span class="doc-inline-code">0：向上（Up）</span></li>
+      <li><span class="doc-inline-code">1：向右（Right）</span></li>
+      <li><span class="doc-inline-code">2：向下（Down）</span></li>
+      <li><span class="doc-inline-code">3：向左（Left）</span></li>
+    </ul>
+    <p>
+      在状态 <span class="doc-inline-code">(r, c)</span> 下执行某个动作后，会尝试移动到
+      <span class="doc-inline-code">(r', c')</span>，其中：
+    </p>
+    <ul>
+      <li>如果新格子在地图范围内且可走，则状态更新为该格子；</li>
+      <li>如果新格子越界或是墙体，则可以选择「原地不动并给惩罚」，或「视为非法动作直接惩罚」。</li>
+    </ul>
+    <p class="doc-note">
+      在 <code>rl.html</code> 的 2D Demo 中，动作就是直接作用于这个网格世界，
+      非常适合教学演示。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>4. 奖励函数与网格属性</h2>
+    <p>
+      网格世界中的每一个格子，都可以被赋予一个或多个「属性」，这些属性会在
+      <strong>奖励函数（reward function）</strong> 中被用到。
+    </p>
+    <p>
+      例如在本项目中，可以这样设计：
+    </p>
+    <ul>
+      <li>普通可走格子：每走一步给一个小的负奖励，例如 <span class="doc-inline-code">-0.01</span>，鼓励尽快到达终点。</li>
+      <li>撞墙 / 非法移动：给出较大的负奖励，例如 <span class="doc-inline-code">-0.2</span>。</li>
+      <li>终点格子：给出较大的正奖励，例如 <span class="doc-inline-code">+1.0</span>，并结束本局。</li>
+      <li>检查点格子：给出中等正奖励，例如 <span class="doc-inline-code">+0.3</span>，
+        引导智能体经过重要区域。</li>
+    </ul>
+    <p>
+      这些逻辑在代码中通常集中在 <code>rewards.js</code> 或环境更新函数里实现，
+      与网格世界的建模是紧密相关的。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>5. 3D 可视化与网格世界的同步</h2>
+    <p>
+      为了让「AI 看见的世界」和「人类看见的 3D 场景」保持一致，我们需要做两件事：
+    </p>
+    <ul>
+      <li>
+        <strong>坐标映射：</strong>
+        在 Arena 中，小球的 3D 坐标 <span class="doc-inline-code">(x, z)</span> 会被投影到网格坐标
+        <span class="doc-inline-code">(row, col)</span>，反之在渲染时也要从网格位置映射回 3D 空间。
+      </li>
+      <li>
+        <strong>步长同步：</strong>
+        每执行一次动作（一次环境步），小球在 3D 中移动的距离，应当精确对应「从一个格子走到邻格」。
+      </li>
+    </ul>
+    <p>
+      这样就可以保证：
+    </p>
+    <ul>
+      <li>Q-learning 看到的状态转移，和玩家肉眼看到的小球运动是完全一致的；</li>
+      <li>训练好的策略，在 2D 网格和 3D 场景中都能「说得通」。</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>6. 与 NavMesh 的关系</h2>
+    <p>
+      前一页我们介绍了导航网格（NavMesh），本页介绍的是按行列编号的网格世界，
+      两者之间的关系可以简单概括为：
+    </p>
+    <ul>
+      <li>NavMesh 更偏向于「<strong>几何可行走区域</strong>」的表示，适合传统 A* 寻路和 3D 引擎；</li>
+      <li>网格世界更偏向于「<strong>离散状态空间</strong>」的表示，适合强化学习算法；</li>
+      <li>在本项目中，网格世界可以看作是对 NavMesh 的一种<strong>规则化、栅格化</strong> 简化。</li>
+    </ul>
+    <p class="doc-note">
+      在后续的 <strong>Q-learning 原理</strong> 等页面中，我们会在本页定义的网格世界基础上，
+      推导更新公式并展示训练结果曲线。
+    </p>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<!-- 滚动淡入脚本 -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sections = document.querySelectorAll('.doc-section');
+
+    if (!('IntersectionObserver' in window)) {
+      sections.forEach(s => s.classList.add('is-visible'));
+      return;
+    }
+
+    const obs = new IntersectionObserver((entries, observer) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    sections.forEach(sec => obs.observe(sec));
+  });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

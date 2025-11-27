@@ -1,0 +1,455 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>操作与快捷键一览 · AI Race</title>
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <style>
+    main.doc-page{
+      max-width: 960px;
+      margin:24px auto 40px;
+      padding:0 16px 40px;
+    }
+    .doc-hero,
+    .doc-section{
+      position:relative;
+      margin-top:24px;
+      padding:20px 20px 22px;
+      border-radius:18px;
+      border:1px solid #1c2533;
+      background:radial-gradient(circle at top left,
+                  rgba(244,114,182,0.18), rgba(15,23,42,1) 55%);
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(22px);
+      transition:
+        opacity .65s ease-out,
+        transform .65s ease-out,
+        box-shadow .65s ease-out,
+        border-color .65s ease-out,
+        background 1s ease-out;
+    }
+    .doc-hero::before,
+    .doc-section::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:linear-gradient(120deg,
+                  rgba(244,114,182,0.0),
+                  rgba(244,114,182,0.4),
+                  rgba(59,130,246,0.0));
+      transform:translateX(-45%);
+      opacity:0;
+      transition:
+        transform 1.1s ease-out,
+        opacity 1.1s ease-out;
+      pointer-events:none;
+    }
+    .doc-visible{
+      opacity:1;
+      transform:none;
+      box-shadow:0 26px 70px rgba(0,0,0,.55);
+      border-color:rgba(244,114,182,.85);
+      background:radial-gradient(circle at top left,
+                  rgba(244,114,182,0.25), rgba(15,23,42,1) 60%);
+    }
+    .doc-visible::before{
+      transform:translateX(0);
+      opacity:1;
+    }
+
+    .doc-hero h1{
+      margin:0 0 8px;
+      font-size:26px;
+    }
+    .doc-hero p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      max-width:540px;
+    }
+
+    .doc-section h2{
+      margin:0 0 8px;
+      font-size:20px;
+    }
+    .doc-section p{
+      margin:4px 0 8px;
+      font-size:14px;
+      line-height:1.65;
+      color:var(--muted);
+    }
+    table.shortcuts{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:6px;
+      font-size:13px;
+    }
+    table.shortcuts th,
+    table.shortcuts td{
+      padding:6px 8px;
+      border-bottom:1px solid #1e293b;
+      vertical-align:top;
+    }
+    table.shortcuts th{
+      text-align:left;
+      color:#e5e7eb;
+      font-weight:600;
+      background:rgba(15,23,42,.8);
+    }
+    table.shortcuts tr:nth-child(even) td{
+      background:rgba(15,23,42,.75);
+    }
+    kbd{
+      display:inline-block;
+      padding:2px 6px;
+      margin:1px 2px 1px 0;
+      border-radius:5px;
+      border:1px solid #4b5563;
+      background:#020617;
+      font-size:11px;
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+  </style>
+
+  <!-- 统一外观：共享文档样式（覆盖上方旧样式以保持一致） -->
+  <style>
+    :root{
+      --doc-accent: #a78bfa;
+      --doc-accent-2: #60a5fa;
+      --doc-border: #1c2533;
+      --doc-bg: #0e1320;
+      --doc-muted: #9db0c6;
+    }
+    main.doc-page{
+      max-width: 960px;
+      margin:24px auto 40px;
+      padding:0 16px 40px;
+    }
+    .doc-hero,
+    .doc-section{
+      position:relative;
+      margin-top:24px;
+      padding:20px 20px 22px;
+      border-radius:18px;
+      border:1px solid var(--doc-border);
+      background:radial-gradient(circle at 12% 0%,
+                  color-mix(in srgb, var(--doc-accent) 26%, transparent),
+                  var(--doc-bg) 62%);
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(22px);
+      transition:
+        opacity .65s ease-out,
+        transform .65s ease-out,
+        box-shadow .65s ease-out,
+        border-color .65s ease-out,
+        background 1s ease-out;
+    }
+    .doc-hero::before,
+    .doc-section::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:linear-gradient(120deg,
+                  color-mix(in srgb, var(--doc-accent) 0%, transparent),
+                  color-mix(in srgb, var(--doc-accent-2) 34%, transparent),
+                  color-mix(in srgb, var(--doc-accent) 0%, transparent));
+      transform:translateX(-45%);
+      opacity:0;
+      transition:
+        transform 1.1s ease-out,
+        opacity 1.1s ease-out;
+      pointer-events:none;
+    }
+    .doc-visible{
+      opacity:1;
+      transform:none;
+      box-shadow:0 26px 70px rgba(0,0,0,.55);
+      border-color:color-mix(in srgb, var(--doc-accent) 60%, #1f2a3a 40%);
+      background:radial-gradient(circle at 14% 0%,
+                  color-mix(in srgb, var(--doc-accent-2) 24%, transparent),
+                  var(--doc-bg) 68%);
+    }
+    .doc-visible::before{
+      transform:translateX(0);
+      opacity:1;
+    }
+
+    .doc-hero h1{
+      margin:0 0 8px;
+      font-size:26px;
+      letter-spacing:.02em;
+    }
+    .doc-hero p{
+      margin:4px 0 0;
+      color:var(--doc-muted);
+      font-size:13px;
+      max-width:540px;
+    }
+    .doc-section h2{
+      margin:0 0 8px;
+      font-size:20px;
+    }
+    .doc-section p{
+      margin:4px 0 8px;
+      font-size:14px;
+      line-height:1.65;
+      color:var(--doc-muted);
+    }
+    table.shortcuts{
+      width:100%;
+      border-collapse:collapse;
+      margin-top:6px;
+      font-size:13px;
+    }
+    table.shortcuts th,
+    table.shortcuts td{
+      padding:6px 8px;
+      border-bottom:1px solid #1e293b;
+      vertical-align:top;
+    }
+    table.shortcuts th{
+      text-align:left;
+      color:#e5e7eb;
+      font-weight:600;
+      background:rgba(15,23,42,.8);
+    }
+  </style>
+
+  <!-- 返回按钮统一样式（与文档主题色呼应） -->
+  <style>
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--doc-accent, #38bdf8) 55%, #1f2937 45%);
+      background: linear-gradient(120deg, var(--doc-accent, #38bdf8), var(--doc-accent-2, #a855f7));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .back-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.4);
+    }
+    .back-btn:active{
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.32);
+    }
+  </style>
+</head>
+<body>
+<header class="guide-header">
+  <div class="guide-header-inner">
+    <a href="index.html" class="brand">
+      <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+      <span class="brand-text">AI Race</span>
+    </a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+    <button class="back-btn" onclick="if (history.length > 1) history.back(); else location.href='index.html'">返回</button>
+  </div>
+</header>
+
+<main class="doc-page">
+  <section class="doc-hero">
+    <h1>操作与快捷键一览</h1>
+    <p>
+      把编辑器、Arena 等页面常用的鼠标操作和键盘快捷键集中放在一页，
+      方便查阅和在上台演示时快速说明交互方式。
+    </p>
+  </section>
+
+  <!-- 编辑器 -->
+  <section class="doc-section">
+    <h2>① 地图编辑器（editor.html）</h2>
+    <p>编辑器页面用于搭建 3D 迷宫、摆放障碍和起终点，并烘焙 NavMesh / 路径。</p>
+
+    <table class="shortcuts">
+      <thead>
+        <tr>
+          <th style="width:30%;">操作 / 快捷键</th>
+          <th>功能说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>鼠标左键拖动</kbd></td>
+          <td>OrbitControls 视角环绕旋转，围绕迷宫中心查看不同角度。</td>
+        </tr>
+        <tr>
+          <td><kbd>鼠标右键拖动</kbd></td>
+          <td>平移视角，在平面内移动观察位置。</td>
+        </tr>
+        <tr>
+          <td><kbd>滚轮</kbd></td>
+          <td>缩放视图，拉近 / 推远查看细节与整体。</td>
+        </tr>
+        <tr>
+          <td><kbd>左键单击地面</kbd></td>
+          <td>根据当前模式（放置障碍 / 设置起点 / 终点等）在对应网格上进行操作。</td>
+        </tr>
+        <tr>
+          <td><kbd>左键单击物体</kbd></td>
+          <td>选中已有障碍或特殊格子，后续可以删除或查看状态。</td>
+        </tr>
+        <tr>
+          <td><kbd>Shift</kbd> + 拖动</td>
+          <td>在部分模式下，可以按住 <kbd>Shift</kbd> 拖动以更细致地调整物体位置。</td>
+        </tr>
+        <tr>
+          <td><kbd>Ctrl</kbd> + 左键点击</td>
+          <td>删除选中的障碍或特殊标记（具体行为与当前模式有关）。</td>
+        </tr>
+        <tr>
+          <td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td>
+          <td>删除当前选中的对象（障碍块、起点 / 终点标记等）。</td>
+        </tr>
+        <tr>
+          <td><kbd>Esc</kbd></td>
+          <td>退出当前放置模式，回到普通观察状态。</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top:6px;">
+      具体功能按钮（例如「添加障碍」「设置起点」「烘焙 NavMesh」「查找路径」等）
+      会出现在编辑器页面右侧或下方的控制面板中，可结合本页快捷键一起使用。
+    </p>
+  </section>
+
+  <!-- Arena -->
+  <section class="doc-section">
+    <h2>② 对抗 Arena（arena.html）</h2>
+    <p>
+      Arena 页面的交互以按钮和滑块为主，键盘快捷键较少，主要是 Three.js 视角控制。
+    </p>
+
+    <table class="shortcuts">
+      <thead>
+        <tr>
+          <th style="width:30%;">操作 / 快捷键</th>
+          <th>功能说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>鼠标左键 / 右键拖动</kbd> + <kbd>滚轮</kbd></td>
+          <td>与编辑器类似，用于旋转 / 平移 / 缩放 3D 迷宫视角。</td>
+        </tr>
+        <tr>
+          <td>点击 <kbd>随机简单 / 中等 / 困难迷宫</kbd></td>
+          <td>更换当前对抗使用的迷宫场景。</td>
+        </tr>
+        <tr>
+          <td>点击 <kbd>开始持续对抗</kbd></td>
+          <td>启动多局 A/B 对抗，历史结果写入 <code>localStorage('arena_runs')</code>。</td>
+        </tr>
+        <tr>
+          <td>点击 <kbd>暂停 / 继续</kbd></td>
+          <td>在当前对抗或 RL 训练过程中暂停或恢复。</td>
+        </tr>
+        <tr>
+          <td>点击 <kbd>下一局</kbd></td>
+          <td>只推进一局对抗，便于逐局观察 A/B 的路径和积分。</td>
+        </tr>
+        <tr>
+          <td>点击 <kbd>清空历史记录</kbd></td>
+          <td>清空对抗历史统计和本地存储的 <code>arena_runs</code>。</td>
+        </tr>
+        <tr>
+          <td>点击 <kbd>开始 RL 训练</kbd></td>
+          <td>启用基于 Lab 参数的双智能体 Q-learning 训练。</td>
+        </tr>
+        <tr>
+          <td>点击 <kbd>单步：两边各跑 1 局</kbd></td>
+          <td>让两个智能体各自再训练一局，用于教学演示。</td>
+        </tr>
+        <tr>
+          <td>拖动 <kbd>训练速度 滑块</kbd></td>
+          <td>控制 RL 训练每秒步数（steps/s），可在慢动作和高速训练之间切换。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- Lab / Dashboard / 通用 -->
+  <section class="doc-section">
+    <h2>③ Lab / Dashboard 与通用操作</h2>
+    <p>Lab 与 Dashboard 主要是表单和图表，交互以鼠标为主。</p>
+
+    <table class="shortcuts">
+      <thead>
+        <tr>
+          <th style="width:30%;">页面 / 操作</th>
+          <th>功能说明</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Lab：填写表单 + 点击保存</td>
+          <td>
+            将当前 Q-learning 超参数写入
+            <code>localStorage('ai_lab_params')</code>，Arena 训练时会读取。
+          </td>
+        </tr>
+        <tr>
+          <td>Dashboard：点击顶部「返回」按钮</td>
+          <td>
+            若有历史记录则回到上一页，否则跳转至首页
+            <code>index.html</code>。
+          </td>
+        </tr>
+        <tr>
+          <td>Dashboard：鼠标悬停折线图</td>
+          <td>查看具体 Episode 对应的成功率、步数、ε 等精确数值。</td>
+        </tr>
+        <tr>
+          <td>所有页面：导航栏「更多 ▾」</td>
+          <td>展开下拉菜单，进入「帮助 / 原理」和「关于」等辅助页面。</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const els = document.querySelectorAll('.doc-hero, .doc-section')
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('doc-visible')
+          io.unobserve(e.target)
+        }
+      })
+    }, { threshold: 0.18 })
+    els.forEach(el => io.observe(el))
+  })
+</script>
+</body>
+</html>
+
+
+

@@ -1,0 +1,558 @@
+:root{
+  --brand:#1e88e5; --bg:#0b0e14; --text:#eaeef3; --muted:#9db0c6;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--text);background:var(--bg)}
+a{color:inherit;text-decoration:none}
+/* 顶部导航条 */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 24px;
+  max-width: 1200px;
+  width: calc(100% - 32px);
+  margin: 0 auto;
+  background: rgba(18, 23, 32, 0.96);
+  border-bottom: 1px solid #1c2533;
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.brand-text {
+  letter-spacing: 0.2px;
+}
+
+/* 顶部导航列表 */
+.nav {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nav > li {
+  list-style: none;
+  position: relative;
+  padding-bottom: 8px;           /* 关键：加一点底部 padding，让 hover 区域延长到下拉菜单的上沿 */
+}
+
+.nav > li > a {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background .15s ease, color .15s ease;
+}
+
+.nav > li > a:hover {
+  background: #1c2533;
+}
+
+/* 下拉菜单本体 */
+.nav .dropdown {
+  position: absolute;
+  top: 100%;                      /* 紧贴 li 底部 */
+  left: 0;
+  margin-top: 0;                  /* 不再制造“空缝” */
+  min-width: 150px;
+  padding: 8px;
+  border-radius: 10px;
+  background: #121720;
+  border: 1px solid #1c2533;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, .6);
+  display: none;
+}
+
+/* 鼠标在 li 上 或者 子元素获得焦点（键盘导航）时，都展示子菜单 */
+.nav > li:hover .dropdown,
+.nav > li:focus-within .dropdown {
+  display: block;
+}
+
+/* 子菜单项 */
+.dropdown a {
+  display: block;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dropdown a:hover {
+  background: #1c2533;
+  color: var(--text);
+}
+
+.container{max-width:1080px;margin:24px auto;padding:0 16px}
+h1{margin:16px 0}
+.swiper{width:100%;height:360px;border-radius:16px;overflow:hidden}
+.swiper-slide{display:flex;align-items:center;justify-content:center;font-size:28px;background:#162030}
+.footer{color:#8aa0b8;text-align:center;padding:24px 0;border-top:1px solid #1c2533;margin-top:40px}
+/* 对抗 Arena 页面布局 */
+.arena-layout{
+  max-width:none;
+  margin:0;
+  padding:0 0 0;
+  display:flex;
+  height:calc(100vh - 64px); /* 预留给顶部导航 */
+}
+
+#arena-viewport{
+  flex:1;
+  min-width:0;
+}
+
+/* 右侧控制面板 */
+#arena-panel{
+  width:320px;
+  padding:16px;
+  border-left:1px solid #1c2533;
+  background:#0f131a;
+  overflow:auto;
+}
+
+.arena-muted{
+  color:var(--muted);
+  font-size:13px;
+}
+
+/* 小卡片样式 */
+.arena-card{
+  border-radius:12px;
+  border:1px solid #1c2533;
+  padding:12px 12px 10px;
+  margin-bottom:12px;
+  font-size:13px;
+  background:#0b1018;
+}
+
+.arena-card h2{
+  margin:0 0 6px;
+  font-size:14px;
+}
+
+/* 左右对齐行 */
+.arena-kv{
+  display:flex;
+  justify-content:space-between;
+  margin:2px 0;
+}
+
+.arena-kv span:last-child{
+  font-weight:500;
+}
+
+/* 控制按钮区 */
+.arena-controls button{
+  display:block;
+  width:100%;
+  margin-bottom:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  border:1px solid #2c3342;
+  background:#1a2130;
+  color:var(--text);
+  cursor:pointer;
+}
+
+.arena-controls button:hover{
+  background:#233049;
+}
+/* ===== 首页英雄轮播布局（index.html 专用） ===== */
+
+/* 顶部简介 */
+.hero-intro {
+  margin-top: 4px;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  color: #9db0c6;
+  line-height: 1.6;
+}
+
+/* Swiper 外层稍微拉高一点，让卡片显得不那么“压抑” */
+.hero-swiper {
+  margin-top: 12px;
+  margin-bottom: 16px;
+  border-radius: 20px;
+  background: #0b1220;
+  padding: 18px 18px 26px;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.50);
+}
+
+/* 每一页里使用左右两列布局 */
+.hero-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  min-height: 260px;
+}
+
+/* 小屏幕改为上下布局，避免图片被挤扁 */
+@media (max-width: 900px) {
+  .hero-grid {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+.hero-text {
+  flex: 1 1 52%;
+}
+
+.hero-text h2 {
+  margin: 0 0 10px;
+  font-size: 1.5rem;
+}
+
+.hero-subtitle {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #cbd5f5;
+}
+
+.hero-bullets {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 0.9rem;
+  color: #d1d5db;
+}
+
+.hero-bullets li + li {
+  margin-top: 4px;
+}
+
+/* “进入 XXX →” 按钮 */
+.hero-link {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(129, 140, 248, 0.8);
+  font-size: 0.9rem;
+  color: #c7d2fe;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.hero-link:hover {
+  background: rgba(129, 140, 248, 0.18);
+  color: #e5e7ff;
+  transform: translateY(-1px);
+}
+
+/* 右侧图片区域 */
+.hero-image {
+  flex: 1 1 48%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.hero-image img {
+  max-width: 100%;
+  max-height: 260px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55);
+}
+
+/* 底部提示文字 */
+.hero-note {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  color: #8fa3bf;
+  line-height: 1.6;
+}
+/* ===== 首页动态背景（只对 body.home-bg 生效） ===== */
+
+/* 给首页 body 一个基础深色背景，防止动画没加载出来时是纯黑 */
+body.home-bg {
+  position: relative;           /* 方便伪元素定位 */
+  overflow-x: hidden;
+  background: radial-gradient(circle at 10% 0%, #020617 0, #020617 40%, #020617 100%);
+}
+
+/* 背景 1：大块彩色渐变，缓慢流动的“霓虹云” */
+body.home-bg::before {
+  content: "";
+  position: fixed;              /* 固定在视口，不随滚动 */
+  inset: -60px;                 /* 稍微放大一点，避免边缘露底色 */
+  z-index: -1;                  /* 放在所有内容后面 */
+  background:
+    radial-gradient(circle at 0%   0%,   #1d4ed8 0, transparent 55%),
+    radial-gradient(circle at 100% 0%,   #f97316 0, transparent 55%),
+    radial-gradient(circle at 0%   100%, #22c55e 0, transparent 55%),
+    radial-gradient(circle at 100% 100%, #a855f7 0, transparent 55%);
+  opacity: 0.45;                /* 整体透明度，避免太亮 */
+  filter: blur(28px);           /* 模糊成光晕 */
+  animation: heroGlow 22s ease-in-out infinite alternate;
+}
+
+/* 背景 2：轻微暗角，让中心区域更聚焦（可选） */
+body.home-bg::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(15, 23, 42, 0.1) 0, transparent 55%),
+    radial-gradient(circle at 50% 80%, rgba(15, 23, 42, 0.45) 0, rgba(15, 23, 42, 0.95) 70%);
+}
+
+/* 渐变缓慢移动 + 旋转的动画 */
+@keyframes heroGlow {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(26px);
+  }
+  25% {
+    transform: translate3d(-20px, 10px, 0) scale(1.05);
+    filter: blur(30px);
+  }
+  50% {
+    transform: translate3d(10px, -20px, 0) scale(1.08);
+    filter: blur(32px);
+  }
+  75% {
+    transform: translate3d(-15px, -10px, 0) scale(1.03);
+    filter: blur(28px);
+  }
+  100% {
+    transform: translate3d(15px, 20px, 0) scale(1.06);
+    filter: blur(30px);
+  }
+}
+/* ====== 首页交互背景：全屏 Canvas，在所有内容下方 ====== */
+#bgCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: -1;           /* 确保在内容后面 */
+  pointer-events: none;  /* 不挡住鼠标点击/悬停 */
+}
+
+/* ====== 首页布局：左右分栏 ====== */
+.home-main {
+  max-width: 1180px;
+  margin: 32px auto 40px;
+  padding: 0 16px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+}
+
+.home-hero h1 {
+  font-size: clamp(2.2rem, 4vw, 2.8rem);
+  margin-bottom: 12px;
+}
+
+.home-subtitle {
+  color: #9db0c6;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.home-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn-primary,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #22c55e);
+  color: #0b1120;
+  font-weight: 600;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.05);
+}
+
+.btn-ghost {
+  border-color: #4b5563;
+  color: #e5e7eb;
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.btn-ghost:hover {
+  border-color: #9ca3af;
+}
+
+.home-feature-list {
+  margin: 0;
+  padding-left: 1.1em;
+  color: #cbd5f5;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+/* ====== 右侧轮播卡片 ====== */
+.home-swiper-wrap {
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 18px;
+  padding: 18px 16px 12px;
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.slide-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 12px;
+}
+
+.slide-card img {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+}
+
+.slide-text h2 {
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.slide-text p {
+  font-size: 0.9rem;
+  color: #cbd5f5;
+  line-height: 1.6;
+}
+
+.home-note {
+  margin-top: 10px;
+  font-size: 0.88rem;
+  color: #9db0c6;
+}
+
+/* Swiper 自带的箭头/分页点在你的主题里已经有色了，这里就不再重写 */
+
+/* 响应式：小屏改为上下布局 */
+@media (max-width: 900px) {
+  .home-main {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+/* 顶部导航中的音乐按钮 + 当前曲目名 */
+.nav-music {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 6px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #1f2937;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(6px);
+}
+
+.nav-music button {
+  padding: 4px 9px;
+  border-radius: 999px;
+  border: 1px solid #4b5563;
+  background: rgba(15,23,42,0.9);
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-music button:hover {
+  border-color: #60a5fa;
+  background: rgba(30,64,175,0.9);
+}
+
+.nav-music button.is-playing {
+  border-color: #22c55e;
+  background: #022c22;
+  color: #bbf7d0;
+}
+
+.nav-music select {
+  min-width: 110px;
+  max-width: 140px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid #374151;
+  background: rgba(17, 24, 39, 0.92);
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  height: 26px;
+  line-height: 1.2;
+}
+
+.nav-music input[type=range] {
+  width: 80px;
+  accent-color: #60a5fa;
+  background: transparent;
+}
+
+.music-title {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 首页小计时徽标 */
+.page-timer {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  border: 1px solid #1f2937;
+  background: rgba(0, 0, 0, 0.35);
+  color: #9ca3af;
+  font-size: 11px;
+  letter-spacing: 0.2px;
+  opacity: 0.7;
+  pointer-events: none;
+}

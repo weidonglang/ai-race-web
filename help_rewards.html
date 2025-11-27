@@ -1,0 +1,396 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>奖励函数设计：时间、碰撞与效率 · AI Race</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <style>
+    main.doc-main {
+      margin-top: 18px;
+      margin-bottom: 40px;
+    }
+
+    .doc-hero {
+      border-radius: 20px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(34, 197, 94, 0.22), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(234, 179, 8, 0.18), transparent 55%),
+        #020617;
+      border: 1px solid #1f2937;
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .doc-hero h1 {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+      letter-spacing: 0.03em;
+    }
+
+    .doc-hero p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+    }
+
+    .doc-hero strong {
+      color: #bef264;
+    }
+
+    .doc-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: #9ca3af;
+    }
+
+    .doc-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .doc-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #fef3c7, #facc15);
+      box-shadow: 0 0 8px rgba(250, 204, 21, 0.9);
+    }
+
+    .doc-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 0.55s ease-out,
+        transform 0.55s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .doc-section::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 2px;
+      width: 100%;
+      background: linear-gradient(
+        to right,
+        #111827 0,
+        #22c55e 18%,
+        #eab308 40%,
+        #f97316 70%,
+        #111827 100%
+      );
+      transform-origin: left center;
+      transform: scaleX(0);
+      opacity: 0.8;
+      transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .doc-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .doc-section.is-visible::before {
+      transform: scaleX(1);
+    }
+
+    .doc-section h2 {
+      font-size: 1.08rem;
+      margin-bottom: 6px;
+    }
+
+    .doc-section h3 {
+      font-size: 0.98rem;
+      margin: 8px 0 4px;
+    }
+
+    .doc-section p {
+      font-size: 0.93rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+      margin: 4px 0;
+    }
+
+    .doc-section ul {
+      margin: 4px 0 4px 18px;
+      padding-left: 0;
+      font-size: 0.92rem;
+      line-height: 1.9;
+      color: #d1d5db;
+    }
+
+    .doc-note {
+      font-size: 0.84rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    .doc-inline-code {
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85em;
+    }
+
+    @media (max-width: 720px) {
+      .doc-hero {
+        padding: 16px 14px 14px;
+      }
+    }
+  </style>
+
+  <!-- 返回按钮统一样式（与文档主题色呼应） -->
+  <style>
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--doc-accent, #38bdf8) 55%, #1f2937 45%);
+      background: linear-gradient(120deg, var(--doc-accent, #38bdf8), var(--doc-accent-2, #a855f7));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .back-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.4);
+    }
+    .back-btn:active{
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.32);
+    }
+  </style>
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <a href="index.html" class="brand">
+      <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+      <span class="brand-text">AI Race</span>
+    </a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+        <button class="back-btn" onclick="if (history.length > 1) history.back(); else location.href='index.html'">返回</button>
+  </div>
+</header>
+
+<main class="container doc-main">
+  <section class="doc-hero">
+    <h1>奖励函数设计：时间、碰撞与效率</h1>
+    <p>
+      奖励函数（Reward Function）决定了智能体「喜欢」什么样的行为。
+      在 AI Race 中，我们既希望小球<strong>尽快到达终点</strong>，
+      又希望它<strong>路线合理、避免撞墙</strong>。
+    </p>
+    <p>
+      本页结合 <strong>rewards.js</strong> 中的设计思路，
+      解释每一类奖励 / 惩罚项背后的取舍。
+    </p>
+    <div class="doc-hero-meta">
+      <span class="doc-pill">
+        <span class="doc-pill-dot"></span> 关键词：goal / time / path / explore / safety
+      </span>
+      <span class="doc-pill">关联页面：arena.html / arena_rl.html / help_qlearning.html</span>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2>1. 奖励函数在本项目中的角色</h2>
+    <p>
+      对于 Q-learning 来说，奖励函数扮演了「裁判」的角色：
+    </p>
+    <ul>
+      <li>每走一步都会给一个数值反馈；</li>
+      <li>反馈越大，说明这一步越符合「我们希望的行为」；</li>
+      <li>智能体会在无数次试错中，慢慢偏向那些能带来高奖励的走法。</li>
+    </ul>
+    <p>
+      因此，奖励函数的设计相当于：<strong>把任务需求（快、稳、优雅）翻译成数学表达式</strong>。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>2. goal：是否到达终点</h2>
+    <p>
+      最基础的一项：智能体有没有成功到达终点。
+    </p>
+    <ul>
+      <li>如果成功到达终点，给予一次<strong>较大的正奖励</strong>，例如 +1.0；</li>
+      <li>如果在限定步数内没有到达，可以不给额外奖励，甚至在 Episode 末尾给一个小惩罚；</li>
+      <li>在对抗 Arena 中，可以比较 A / B 哪一方先到达终点，给出不同的奖励分布。</li>
+    </ul>
+    <p class="doc-note">
+      在对抗场景下，goal 奖励通常占比较大，用来明确「胜负」。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>3. time：时间与步数惩罚</h2>
+    <p>
+      仅仅到达终点还不够，我们希望它<strong>走得快</strong>。
+      最常见的做法是引入「每一步的时间惩罚」：
+    </p>
+    <ul>
+      <li>每走一步给一个小的负奖励，例如 <span class="doc-inline-code">-0.01</span>；</li>
+      <li>这样在总步数相近的情况下，短路径的总奖励就更高；</li>
+      <li>如果超过某个「最大允许步数」，可以额外给一个终局惩罚，防止拖延。</li>
+    </ul>
+    <p>
+      在 <strong>rewards.js</strong> 中，time 相关奖励会结合：</p>
+    <ul>
+      <li>实际用时 / 实际步数；</li>
+      <li>赛道允许的时间窗口；</li>
+      <li>必要时进行归一化，使不同难度的迷宫下奖励仍然可比。</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>4. path：路径效率与最短路参考</h2>
+    <p>
+      为了不让智能体「乱绕圈」，我们会引入路径效率相关的项：
+    </p>
+    <ul>
+      <li>预先计算迷宫从起点到终点的 <strong>理论最短路径长度</strong>；</li>
+      <li>记智能体实际走过的路径长度为 <span class="doc-inline-code">L_actual</span>；</li>
+      <li>用两者的差值 <span class="doc-inline-code">Δ = L_actual − L_shortest</span> 来定义额外惩罚；</li>
+      <li>Δ 越大，说明绕路越多，惩罚也越大。</li>
+    </ul>
+    <p>
+      典型做法是让 path 奖励在 [−1, 0] 区间内变化，
+      确保「走最短路径」是这一项下最优行为，但又不会完全盖过 goal 奖励。
+    </p>
+    <p class="doc-note">
+      在可视化训练曲线时，可以画出「平均路径长度 / 理论最短路径」随 Episode 的变化，
+      很直观地展示学习效果。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>5. explore：鼓励探索新的格子</h2>
+    <p>
+      在迷宫较大、局部最优很多时，如果仅靠 ε-贪心，智能体可能长时间在某条路径附近打转。
+    </p>
+    <p>
+      为此，可以引入「探索奖励」：</p>
+    <ul>
+      <li>统计智能体在本局中访问过哪些格子；</li>
+      <li>第一次踏入某个格子时，给一个小的正奖励，例如 +0.02；</li>
+      <li>已经访问过的格子不再给这部分奖励。</li>
+    </ul>
+    <p>
+      这样可以鼓励智能体主动走向没走过的区域，增加发现更优路径的机会。
+      在当前 Arena 版本中，这部分接口已经预留，后续可以按需要开启。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>6. safety：碰撞、陷阱与安全行驶</h2>
+    <p>
+      安全性相关的奖励主要惩罚「危险行为」：</p>
+    <ul>
+      <li>撞到墙体或越界移动：给出一次明显的负奖励，例如 <span class="doc-inline-code">-0.2</span>；</li>
+      <li>落入陷阱或禁区：可以给更大的惩罚，并直接结束本局；</li>
+      <li>在对抗场景中，还可以引入「与对手过近」的惩罚，防止恶意卡位。</li>
+    </ul>
+    <p>
+      这些项往往不需要太多，只要足够让智能体意识到「不要乱撞」即可。
+      如果惩罚过大，可能会让它过分保守，宁愿绕远路也不愿靠近墙体。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>7. 多项奖励的加权与归一化</h2>
+    <p>
+      综合起来，一局结束后单个智能体的总奖励可以写成：</p>
+    <p>
+      <span class="doc-inline-code">
+        R_total = w_goal · R_goal + w_time · R_time +
+        w_path · R_path + w_explore · R_explore + w_safety · R_safety
+      </span>
+    </p>
+    <p>其中各个 <span class="doc-inline-code">w_x</span> 就是 <strong>rewards.js</strong> 里配置的系数。</p>
+    <ul>
+      <li>先计算每一项的原始得分（可能是 −∞ 到 +∞）；</li>
+      <li>再通过线性变换、截断或非线性函数，把它们压到一个合理区间；</li>
+      <li>最后加权求和，并映射到 0–100 的积分，用于排行榜展示。</li>
+    </ul>
+    <p class="doc-note">
+      在课堂或报告中，可以用一两个具体数值例子，
+      演示改变某个权重 <span class="doc-inline-code">w_time</span> 后，
+      智能体的行为如何从「绕远但安全」变成「更激进追求时间」。
+    </p>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sections = document.querySelectorAll('.doc-section');
+
+    if (!('IntersectionObserver' in window)) {
+      sections.forEach(s => s.classList.add('is-visible'));
+      return;
+    }
+
+    const obs = new IntersectionObserver((entries, observer) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    sections.forEach(sec => obs.observe(sec));
+  });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

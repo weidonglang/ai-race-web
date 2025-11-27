@@ -1,0 +1,456 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>常见问题 FAQ · AI Race</title>
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <style>
+    main.doc-page{
+      max-width: 960px;
+      margin:24px auto 40px;
+      padding:0 16px 40px;
+    }
+
+    .doc-hero,
+    .doc-section{
+      position:relative;
+      margin-top:24px;
+      padding:20px 20px 22px;
+      border-radius:18px;
+      border:1px solid #1c2533;
+      background:radial-gradient(circle at top left,
+                  rgba(129,140,248,0.20), rgba(15,23,42,1) 55%);
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(22px);
+      transition:
+        opacity .65s ease-out,
+        transform .65s ease-out,
+        box-shadow .65s ease-out,
+        border-color .65s ease-out,
+        background 1s ease-out;
+    }
+    .doc-hero::before,
+    .doc-section::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:linear-gradient(120deg,
+                  rgba(129,140,248,0.0),
+                  rgba(129,140,248,0.45),
+                  rgba(56,189,248,0.0));
+      transform:translateX(-45%);
+      opacity:0;
+      transition:
+        transform 1.1s ease-out,
+        opacity 1.1s ease-out;
+      pointer-events:none;
+    }
+    .doc-visible{
+      opacity:1;
+      transform:none;
+      box-shadow:0 26px 70px rgba(0,0,0,.55);
+      border-color:rgba(129,140,248,.9);
+      background:radial-gradient(circle at top left,
+                  rgba(129,140,248,0.26), rgba(15,23,42,1) 60%);
+    }
+    .doc-visible::before{
+      transform:translateX(0);
+      opacity:1;
+    }
+
+    .doc-hero h1{
+      margin:0 0 8px;
+      font-size:26px;
+    }
+    .doc-hero p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      max-width:540px;
+    }
+
+    .doc-section h2{
+      margin:0 0 8px;
+      font-size:20px;
+    }
+    .doc-section h3{
+      margin:14px 0 4px;
+      font-size:15px;
+    }
+    .doc-section p{
+      margin:4px 0 8px;
+      font-size:14px;
+      line-height:1.65;
+      color:var(--muted);
+    }
+    .faq-item{
+      margin:10px 0 12px;
+      padding:8px 10px;
+      border-radius:10px;
+      border:1px solid #1f2937;
+      background:rgba(15,23,42,.9);
+    }
+    .faq-q{
+      font-weight:600;
+      font-size:14px;
+      margin-bottom:4px;
+    }
+    code{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:12px;
+      background:#020617;
+      padding:1px 4px;
+      border-radius:4px;
+      border:1px solid #1f2937;
+    }
+  </style>
+
+  <!-- 统一案例/FAQ 组的新外观（与帮助组截然不同） -->
+  <style>
+    :root{
+      --case-accent: #38bdf8;
+      --case-accent-2: #f472b6;
+      --case-border: #1f2737;
+      --case-surface: #0b1220;
+      --case-muted: #b7c4da;
+    }
+    main.doc-page{
+      max-width: 980px;
+      margin:28px auto 44px;
+      padding:0 18px 44px;
+    }
+    .doc-hero,
+    .doc-section{
+      position:relative;
+      margin-top:26px;
+      padding:22px 22px 24px;
+      border-radius:14px;
+      border:1px solid var(--case-border);
+      border-left:3px solid var(--case-accent);
+      background:
+        linear-gradient(145deg, rgba(56,189,248,0.12), rgba(244,114,182,0.08)),
+        linear-gradient(0deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+        var(--case-surface);
+      box-shadow:0 18px 44px rgba(0,0,0,0.55);
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(18px) scale(0.99);
+      transition:
+        opacity .5s ease-out,
+        transform .5s ease-out,
+        box-shadow .5s ease-out,
+        border-color .5s ease-out,
+        background .8s ease-out;
+    }
+    .doc-hero::before,
+    .doc-section::before{
+      content:"";
+      position:absolute;
+      top:0; left:0; right:0;
+      height:3px;
+      background:linear-gradient(90deg, var(--case-accent), var(--case-accent-2));
+      opacity:0.9;
+    }
+    .doc-hero::after,
+    .doc-section::after{
+      content:"";
+      position:absolute;
+      inset:6px;
+      border-radius:12px;
+      background:radial-gradient(circle at 14% 0%, rgba(56,189,248,0.10), transparent 55%);
+      opacity:0;
+      transition:opacity .8s ease-out;
+      pointer-events:none;
+    }
+    .doc-visible{
+      opacity:1;
+      transform:translateY(0) scale(1);
+      border-color:color-mix(in srgb, var(--case-accent) 70%, var(--case-border) 30%);
+      box-shadow:0 24px 60px rgba(0,0,0,0.6);
+    }
+    .doc-visible::after{
+      opacity:1;
+    }
+    .doc-hero h1{
+      margin:0 0 8px;
+      font-size:26px;
+      letter-spacing:.01em;
+    }
+    .doc-hero p{
+      margin:4px 0 0;
+      color:var(--case-muted);
+      font-size:13px;
+      max-width:560px;
+    }
+    .doc-section h2{
+      margin:0 0 8px;
+      font-size:20px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .doc-section h3{
+      margin:14px 0 6px;
+      font-size:15px;
+    }
+    .doc-section p{
+      margin:4px 0 8px;
+      font-size:14px;
+      line-height:1.65;
+      color:var(--case-muted);
+    }
+    .doc-section ul{
+      margin:6px 0 8px 1.1em;
+      padding:0;
+      font-size:14px;
+      color:var(--case-muted);
+    }
+    .doc-section li{ margin:2px 0; }
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:3px 10px;
+      border-radius:999px;
+      background:rgba(56,189,248,0.14);
+      border:1px solid rgba(56,189,248,0.4);
+      color:#e0f2fe;
+      font-size:12px;
+      font-weight:600;
+    }
+    .case-topbar{
+      max-width: 980px;
+      margin:16px auto 0;
+      padding:0 18px;
+      display:flex;
+      justify-content:flex-start;
+    }
+    .case-back{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 14px;
+      border-radius:12px;
+      border:1px solid var(--case-border);
+      background:linear-gradient(120deg, rgba(56,189,248,0.14), rgba(244,114,182,0.12));
+      color:#e5e7eb;
+      cursor:pointer;
+      font-size:13px;
+      letter-spacing:0.1px;
+      box-shadow:0 10px 28px rgba(0,0,0,0.35);
+      transition:transform .15s ease, border-color .2s ease, background .2s ease;
+    }
+    .case-back:hover{
+      transform:translateY(-1px);
+      border-color:var(--case-accent);
+      background:linear-gradient(120deg, rgba(56,189,248,0.22), rgba(244,114,182,0.18));
+    }
+    .case-back:active{ transform:translateY(0); }
+  </style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="brand">
+    <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+    <span class="brand-text">AI Race</span>
+  </a>
+  <ul class="nav">
+    <li><a href="editor.html">编辑器</a></li>
+    <li><a href="lab.html">AI 实验室</a></li>
+    <li><a href="dashboard.html">训练看板</a></li>
+    <li><a href="arena.html">对抗 Arena</a></li>
+    <li>
+      <a href="#">更多 ▾</a>
+      <div class="dropdown">
+        <a href="help.html">帮助/原理</a>
+        <a href="about.html">关于</a>
+      </div>
+    </li>
+  </ul>
+</header>
+
+<div class="case-topbar">
+  <button class="case-back" type="button"
+    onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+    ← 返回
+  </button>
+</div>
+
+  <main class="doc-page">
+  <section class="doc-hero">
+    <h1>常见问题（FAQ）</h1>
+    <p>
+      收集使用 AI Race 项目时最常见的一些问题，包括部署方式、浏览器兼容、
+      本地数据清空，以及 RL 训练看起来「没有在学习」时的排查思路。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>① 部署与运行相关</h2>
+
+    <div class="faq-item">
+      <div class="faq-q">Q1：必须用 <code>npm run dev</code> 才能访问吗？能不能打包成静态网页？</div>
+      <p>
+        当前项目默认使用 Vite 开发模式（<code>npm run dev</code>），适合本地调试。
+        若需要提交给老师或部署到 GitHub Pages，可以使用
+        <code>npm run build</code> 生成静态文件，然后把 <code>dist</code>
+        目录部署到静态服务器。
+      </p>
+      <p>
+        如果你已经在 GitHub Pages 上部署，则访问路径通常类似：
+        <code>https://用户名.github.io/ai-race-web/</code>，
+        不再需要本地 <code>npm run dev</code>。
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q2：直接双击 <code>index.html</code> 打开，为什么有些功能失效？</div>
+      <p>
+        直接用 <code>file://</code> 协议打开时，浏览器的跨域和路径限制会导致部分
+        模块加载失败（尤其是使用 ES Module 的脚本），建议至少使用一个简易
+        HTTP 服务器（如 <code>npm run dev</code> 或 <code>npx serve dist</code>）。
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q3：路径里为什么会有 <code>/ai-race-web/</code> 这样的前缀？</div>
+      <p>
+        这是为了适配 GitHub Pages 等「子路径部署」场景设置的
+        <code>base</code> 路径。在本地开发时访问地址可能是
+        <code>http://localhost:5173/ai-race-web/</code>，
+        而在线部署时则对应你的仓库名。
+      </p>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2>② 浏览器与性能</h2>
+
+    <div class="faq-item">
+      <div class="faq-q">Q4：推荐用什么浏览器？手机上能跑吗？</div>
+      <p>
+        建议使用最新版桌面浏览器：Chrome / Edge / Firefox 等。
+        由于 Three.js 3D 渲染和 Chart.js 图表都依赖 WebGL 和 Canvas，
+        移动端浏览器虽然也能打开，但体验和性能都不如桌面端，
+        不建议作为主要演示平台。
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q5：进入页面后是一片黑 / 报 WebGL 错误怎么办？</div>
+      <p>
+        首先检查浏览器是否禁用了硬件加速；其次确认显卡驱动和系统环境支持 WebGL。
+        可以在其他使用 WebGL 的网站（如 Three.js 官方示例）上测试，
+        若都无法显示，说明是环境问题而非本项目的 bug。
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q6：训练时 CPU / GPU 占用偏高正常吗？</div>
+      <p>
+        在高速度训练时，Arena 会在短时间内执行大量 Q-learning 更新并刷新视图，
+        出现较高占用是正常现象。可以通过减小训练速度或缩小浏览器窗口来降低负载。
+      </p>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2>③ 本地数据与清空</h2>
+
+    <div class="faq-item">
+      <div class="faq-q">Q7：训练数据和参数是存在哪里的？</div>
+      <p>项目主要使用 <code>localStorage</code> 存储少量状态，例如：</p>
+      <ul>
+        <li><code>ai_lab_params</code>：Lab 页面中保存的 Q-learning 超参数。</li>
+        <li><code>arena_runs</code>：Arena 进化对抗模式中的对抗历史统计。</li>
+        <li><code>arena_rl_dual_stats</code>：Arena RL 训练为 Dashboard 提供的快照数据。</li>
+      </ul>
+      <p>这些数据仅保存在当前浏览器本地，不会上传到服务器。</p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q8：如何清空训练记录和参数？</div>
+      <p>有两种方式：</p>
+      <ul>
+        <li>
+          在 Arena 中使用「清空历史记录」按钮，重置对抗统计（<code>arena_runs</code>），
+          并在 RL 控制中点击「重置 Q 表」重新开始训练。
+        </li>
+        <li>
+          打开浏览器开发者工具 → Application / 存储 → localStorage →
+          找到当前站点，手动删除 <code>ai_lab_params</code>、
+          <code>arena_runs</code>、<code>arena_rl_dual_stats</code> 等项。
+        </li>
+      </ul>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q9：换浏览器或清理缓存后，训练数据会丢吗？</div>
+      <p>
+        会。localStorage 是「浏览器 + 域名」级别的存储，更换浏览器、
+        使用无痕模式或清理站点数据都会让之前的训练记录消失，这一点在展示时可以提前说明。
+      </p>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2>④ RL 训练相关</h2>
+
+    <div class="faq-item">
+      <div class="faq-q">Q10：为什么我训练了很久，成功率曲线还是几乎一条直线？</div>
+      <p>可以按下列顺序排查：</p>
+      <ul>
+        <li>是否在 Lab 中修改参数后忘记点击保存。</li>
+        <li>Arena 中是否真正点击了「开始 RL 训练」按钮。</li>
+        <li>训练速度是否设置得太慢，几乎没有产生新的 Episode。</li>
+        <li>奖励设计是否极端（例如每一步惩罚过大、终点奖励过小）。</li>
+        <li>迷宫是否过于复杂，对应问题参考
+          <a href="case_hard.html">困难迷宫与失败分析</a>。
+        </li>
+      </ul>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q11：A 和 B 结果几乎一模一样，参数对比看不出差异？</div>
+      <p>
+        可能是因为两组参数差异太小，或者训练时间不够长。
+        可以尝试把 α、ε 初值、ε 衰减设得更「极端」一点，
+        并延长训练 Episode 数量，再在 Dashboard 中对比曲线。
+      </p>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Q12：如何复现实验结果，便于写报告？</div>
+      <p>
+        建议记录以下信息：迷宫文件名（如 <code>maze_medium_003.json</code>）、
+        Lab 参数（α/γ/ε 及衰减）、训练 Episode 数量区间、
+        截图保存 Dashboard 中的三张曲线。这样就可以在报告中完整复现一组实验设置。
+      </p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const els = document.querySelectorAll('.doc-hero, .doc-section')
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('doc-visible')
+          io.unobserve(e.target)
+        }
+      })
+    }, { threshold: 0.18 })
+    els.forEach(el => io.observe(el))
+  })
+</script>
+</body>
+</html>
+
+
+

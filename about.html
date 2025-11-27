@@ -1,0 +1,830 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>关于 · AI Race</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <!-- 本页的额外样式：新配色 + 动画 + 时间线 -->
+  <style>
+    /* 整体背景：深色+缓慢流动的渐变 */
+    body {
+      background:
+        radial-gradient(circle at 0% 0%, #0f172a 0, transparent 55%),
+        radial-gradient(circle at 100% 100%, #020617 0, #020617 55%, #020617 100%);
+      background-color: #020617;
+      animation: bgShift 32s ease-in-out infinite alternate;
+      background-attachment: fixed;
+    }
+
+    @keyframes bgShift {
+      0% {
+        background-position: 0% 0%, 100% 100%;
+      }
+      50% {
+        background-position: 30% 10%, 80% 90%;
+      }
+      100% {
+        background-position: 60% 20%, 60% 80%;
+      }
+    }
+
+    main.about-main {
+      margin-top: 18px;
+      margin-bottom: 40px;
+    }
+
+    /* 顶部 Hero：偏紫 / 青色霓虹风，带微动光晕 */
+    .about-hero {
+      position: relative;
+      border-radius: 26px;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at -10% -20%, rgba(56, 189, 248, 0.35), transparent 55%),
+        radial-gradient(circle at 115% 130%, rgba(244, 63, 94, 0.25), transparent 55%),
+        linear-gradient(135deg, #020617, #020617 40%, #111827 100%);
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      padding: 24px 26px 20px;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2.8fr);
+      gap: 18px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.9);
+      isolation: isolate;
+    }
+
+    /* 流动光晕 */
+    .about-hero::before {
+      content: "";
+      position: absolute;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.4), transparent 55%),
+        radial-gradient(circle at 90% 100%, rgba(168, 85, 247, 0.4), transparent 55%);
+      mix-blend-mode: screen;
+      opacity: 0.55;
+      filter: blur(32px);
+      pointer-events: none;
+      animation: heroGlow 20s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroGlow {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+        opacity: 0.5;
+      }
+      50% {
+        transform: translate3d(-4%, 3%, 0) scale(1.05);
+        opacity: 0.8;
+      }
+      100% {
+        transform: translate3d(4%, -3%, 0) scale(1.03);
+        opacity: 0.6;
+      }
+    }
+
+    .about-hero-left,
+    .about-hero-right {
+      position: relative;
+      z-index: 1;
+    }
+
+    .about-hero-left h1 {
+      margin: 0 0 8px;
+      font-size: 1.9rem;
+      letter-spacing: 0.04em;
+    }
+
+    .about-hero-subtitle {
+      font-size: 0.96rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+      max-width: 520px;
+    }
+
+    .about-hero-subtitle strong {
+      color: #a5b4fc;
+    }
+
+    .about-hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
+    .about-pill {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      background: rgba(15, 23, 42, 0.98);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      color: #e5e7eb;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .about-pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #ecfeff, #22d3ee);
+      box-shadow: 0 0 9px rgba(56, 189, 248, 0.9);
+    }
+
+    /* 标签扫光动画（只在 hover 时跑一次） */
+    .about-pill::after {
+      content: "";
+      position: absolute;
+      top: -2px;
+      left: -40%;
+      width: 40%;
+      height: calc(100% + 4px);
+      background: linear-gradient(
+        120deg,
+        transparent,
+        rgba(248, 250, 252, 0.8),
+        transparent
+      );
+      opacity: 0;
+      transform: skewX(-25deg) translateX(-120%);
+      pointer-events: none;
+    }
+
+    .about-pill:hover::after {
+      animation: pillSweep 0.85s ease-out;
+    }
+
+    @keyframes pillSweep {
+      0% {
+        opacity: 0;
+        transform: skewX(-25deg) translateX(-120%);
+      }
+      40% {
+        opacity: 0.95;
+      }
+      100% {
+        opacity: 0;
+        transform: skewX(-25deg) translateX(220%);
+      }
+    }
+
+    .about-hero-note {
+      margin-top: 10px;
+      font-size: 0.88rem;
+      color: #9ca3af;
+      line-height: 1.9;
+      max-width: 520px;
+    }
+
+    .about-hero-right {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    /* 右侧项目档案面板：新配色 */
+    .about-hero-panel {
+      border-radius: 20px;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(56, 189, 248, 0.32), transparent 60%),
+        radial-gradient(circle at 80% 100%, rgba(129, 140, 248, 0.32), transparent 60%),
+        #020617;
+      border: 1px solid rgba(129, 140, 248, 0.7);
+      padding: 12px 14px 10px;
+      box-shadow: 0 22px 55px rgba(15, 23, 42, 0.9);
+      font-size: 0.82rem;
+      backdrop-filter: blur(6px);
+    }
+
+    .about-hero-panel h2 {
+      margin: 0 0 6px;
+      font-size: 0.96rem;
+    }
+
+    .about-kv-list {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.8fr);
+      gap: 4px 10px;
+      margin-top: 4px;
+    }
+
+    .about-kv-list span:first-child {
+      color: #9ca3af;
+    }
+
+    .about-hero-panel small {
+      display: block;
+      margin-top: 6px;
+      color: #9ca3af;
+    }
+
+    /* 通用 section 样式 + 滚动淡入动画 */
+    .about-section {
+      margin-top: 28px;
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 0.55s ease-out,
+        transform 0.55s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .about-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .about-section h2 {
+      font-size: 1.12rem;
+      margin-bottom: 6px;
+    }
+
+    .about-section p {
+      font-size: 0.94rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+      margin: 6px 0;
+    }
+
+    .about-section ul {
+      margin: 8px 0;
+      padding-left: 18px;
+      font-size: 0.93rem;
+      line-height: 1.9;
+      color: #d1d5db;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    }
+
+    .about-card {
+      border-radius: 14px;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.08), transparent 55%),
+        #020617;
+      border: 1px solid #1e293b;
+      padding: 12px 12px 10px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+      font-size: 0.9rem;
+      opacity: 0;
+      transform: translateY(16px) scale(0.98);
+      transition:
+        opacity 0.45s ease-out,
+        transform 0.45s ease-out,
+        box-shadow 0.2s ease-out,
+        border-color 0.2s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .about-card.is-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .about-card:hover {
+      box-shadow: 0 20px 55px rgba(15, 23, 42, 0.95);
+      border-color: rgba(129, 140, 248, 0.8);
+    }
+
+    .about-card h3 {
+      margin: 0 0 4px;
+      font-size: 0.98rem;
+    }
+
+    .about-card p {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.85;
+      color: #cbd5f5;
+    }
+
+    .about-tag {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      background: rgba(15, 23, 42, 1);
+      color: #a5b4fc;
+      border: 1px solid #3730a3;
+    }
+
+    .about-list-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding-left: 0;
+      list-style: none;
+      margin: 6px 0 2px;
+      font-size: 0.88rem;
+    }
+
+    .about-list-inline li {
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      color: #e5e7eb;
+    }
+
+    code {
+      background: #020617;
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 0.83em;
+      border: 1px solid #1f2937;
+    }
+
+    .about-footer-note {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-top: 4px;
+    }
+
+    /* 时间线：随着滚动逐段上色 */
+    .about-timeline {
+      margin-top: 22px;
+      padding-top: 8px;
+      border-top: 1px dashed #1f2937;
+    }
+
+    .about-timeline-title {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      margin-bottom: 6px;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 26px;
+      margin-top: 10px;
+      --timeline-progress: 0; /* 控制彩色竖线的填充比例 [0,1] */
+    }
+
+    .timeline-line-bg {
+      position: absolute;
+      left: 8px;
+      top: 4px;
+      bottom: 4px;
+      width: 2px;
+      background: linear-gradient(to bottom, #1f2937, #020617);
+      opacity: 0.9;
+    }
+
+    .timeline-line-active {
+      position: absolute;
+      left: 8px;
+      top: 4px;
+      width: 2px;
+      height: calc(100% - 8px);
+      background: linear-gradient(to bottom, #22d3ee, #38bdf8, #a855f7);
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.75);
+      transform-origin: top;
+      transform: scaleY(var(--timeline-progress)); /* JS 会改这个变量 */
+      pointer-events: none;
+    }
+
+    .timeline-item {
+      position: relative;
+      padding: 10px 0 16px 16px;
+      opacity: 0.25;
+      transform: translateY(12px);
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+
+    .timeline-item:last-child {
+      padding-bottom: 4px;
+    }
+
+    .timeline-dot {
+      position: absolute;
+      left: -4px;
+      top: 14px;
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      border: 2px solid #4b5563;
+      background: #020617;
+      box-shadow: none;
+      transition:
+        border-color 0.35s ease-out,
+        background 0.35s ease-out,
+        transform 0.35s ease-out,
+        box-shadow 0.35s ease-out;
+    }
+
+    .timeline-content h3 {
+      margin: 0 0 4px;
+      font-size: 0.96rem;
+    }
+
+    .timeline-content p {
+      margin: 0;
+      font-size: 0.88rem;
+      line-height: 1.8;
+      color: #cbd5f5;
+    }
+
+    /* 节点被“激活”后的样式 */
+    .timeline-item.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .timeline-item.is-visible .timeline-dot {
+      border-color: #38bdf8;
+      background: radial-gradient(circle at 30% 30%, #e0f2fe, #06b6d4);
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.9);
+      transform: scale(1.08);
+    }
+
+    @media (max-width: 860px) {
+      .about-hero {
+        grid-template-columns: minmax(0, 1fr);
+        padding: 20px 16px 18px;
+      }
+
+      .about-hero-right {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .about-kv-list {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .timeline {
+        padding-left: 22px;
+      }
+
+      .timeline-dot {
+        left: -6px;
+      }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <a href="index.html" class="brand">
+    <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+    <span class="brand-text">AI Race</span>
+  </a>
+  <ul class="nav">
+    <li>
+      <a href="javascript:void(0)"
+         onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+        ← 返回
+      </a>
+    </li>
+
+    <li><a href="editor.html">编辑器</a></li>
+    <li><a href="lab.html">AI 实验室</a></li>
+    <li><a href="dashboard.html">训练看板</a></li>
+    <li><a href="arena.html">对抗 Arena</a></li>
+    <li>
+      <a href="javascript:void(0)">更多 ▾</a>
+      <div class="dropdown">
+        <!-- 已删除回放库 -->
+        <a href="help.html">帮助/原理</a>
+        <a href="about.html">关于</a>
+      </div>
+    </li>
+  </ul>
+</header>
+
+<main class="container about-main">
+  <!-- 顶部简介 -->
+  <section class="about-hero">
+    <div class="about-hero-left">
+      <h1>关于 AI Race 项目</h1>
+      <p class="about-hero-subtitle">
+        AI Race 是一个面向教学和实验的 Web 小型平台，将
+        <strong>3D 场景 / 路径规划 / 强化学习</strong> 组合在一起，
+        让你可以在浏览器里直观地「看见」智能体从乱走到学会走迷宫的全过程。
+      </p>
+
+      <div class="about-hero-tags">
+        <span class="about-pill">
+          <span class="about-pill-dot"></span> 前端可视化 · 纯浏览器运行
+        </span>
+        <span class="about-pill">Three.js 3D 场景</span>
+        <span class="about-pill">Q-learning 强化学习</span>
+        <span class="about-pill">本地存储 · 无服务器依赖</span>
+      </div>
+
+      <p class="about-hero-note">
+        本项目作为一份课程期末 Web 作品，希望在有限的复杂度下，
+        尽量完整地展示：从环境建模、奖励设计、训练过程，到结果可视化的整条链路，
+        方便课堂讲解、报告撰写以及同学们自行扩展。
+      </p>
+    </div>
+
+    <!-- 右侧：简要项目档案 -->
+    <aside class="about-hero-right">
+      <div class="about-hero-panel">
+        <h2>项目档案 / Project Info</h2>
+        <div class="about-kv-list">
+          <span>名称</span>
+          <span>AI Race – 3D RL Arena Demo</span>
+          <span>类型</span>
+          <span>浏览器端交互式 AI / 算法可视化 Demo</span>
+          <span>主要模块</span>
+          <span>编辑器 · AI 实验室 · 对抗 Arena · 训练看板</span>
+          <span>数据存储</span>
+          <span>localStorage（如 <code>arena_rl_dual_stats</code> 等）</span>
+        </div>
+        <small>
+          说明：项目不依赖后端服务或数据库，所有训练记录均保存在本地浏览器，
+          方便离线演示和在不同机器上快速部署。
+        </small>
+      </div>
+    </aside>
+  </section>
+
+  <!-- 1. 设计目标 -->
+  <section class="about-section" id="goals">
+    <h2>1. 设计目标</h2>
+    <p>在设计 AI Race 时，项目一开始给自己定了三个比较清晰的目标：</p>
+    <ul>
+      <li><strong>可演示</strong>：适合课堂或者答辩现场展示，几分钟内能让观众看明白玩法和原理。</li>
+      <li><strong>可实验</strong>：可以随手改参数、改奖励，观察学习曲线和表现的变化，支持「乱试」。</li>
+      <li><strong>可扩展</strong>：代码结构尽量清晰，方便以后替换 RL 算法、增加新地图或新可视化方式。</li>
+    </ul>
+    <p>
+      因此，你在界面中能看到四个相对独立又互相连接的部分：编辑器负责「造世界」，
+      Arena 负责「跑对抗」，AI 实验室调「脑子参数」，训练看板则帮助「解释结果」。
+    </p>
+  </section>
+
+  <!-- 2. 核心特色 -->
+  <section class="about-section" id="features">
+    <h2>2. 核心特色</h2>
+    <div class="about-grid">
+      <article class="about-card">
+        <h3>3D 场景 + RL 迷宫<span class="about-tag">可视化决策过程</span></h3>
+        <p>
+          利用 Three.js 搭建简化的 3D 迷宫场景，小球在其中移动。
+          迷宫在内部被离散为网格，所有强化学习逻辑都发生在这个网格世界上，
+          再通过渲染层映射到三维空间，方便观察和截图。
+        </p>
+      </article>
+
+      <article class="about-card">
+        <h3>双智能体对抗<span class="about-tag">A/B 对比</span></h3>
+        <p>
+          Arena 中支持两个智能体同时训练和对比（Agent A / Agent B），
+          每个智能体可以拥有不同的学习率、折扣因子和探索策略。
+          通过训练看板可以直观地比较：哪一个收敛更快、路径更短、表现更稳定。
+        </p>
+      </article>
+
+      <article class="about-card">
+        <h3>参数面板化<span class="about-tag">AI 实验室</span></h3>
+        <p>
+          将强化学习中常见的超参数（如 <code>α</code>、<code>γ</code>、探索率衰减等）
+          做成了一个可视化面板，保存在浏览器本地。
+          调整后重新进入 Arena 即可用新配置重新训练，适合做「调参实验」。
+        </p>
+      </article>
+
+      <article class="about-card">
+        <h3>训练快照 &amp; 看板<span class="about-tag">数据可视化</span></h3>
+        <p>
+          训练过程中会将关键统计信息写入 <code>localStorage</code>，
+          仪表盘使用 Chart.js 对成功率、平均步数、路径效率和探索率进行可视化，
+          并在文本区域给出一段易懂的「小结论」，方便写实验报告或展示 PPT。
+        </p>
+      </article>
+    </div>
+
+    <!-- 时间线：滚动时节点依次点亮，竖线颜色向下“长出来” -->
+    <div class="about-timeline">
+      <p class="about-timeline-title">
+        下图用一条时间线概括了 AI Race 中一次完整训练的大致流程：
+      </p>
+      <div class="timeline">
+        <!-- 灰色背景线 -->
+        <div class="timeline-line-bg"></div>
+        <!-- 会随着滚动逐渐被填充的彩色进度线 -->
+        <div class="timeline-line-active"></div>
+
+        <article class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <h3>Step 1 · 构建迷宫环境</h3>
+            <p>
+              在编辑器中搭建 3D 迷宫，内部离散成网格状态空间，
+              标记起点、终点以及墙体 / 陷阱，准备好给 RL 使用的「世界」。
+            </p>
+          </div>
+        </article>
+
+        <article class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <h3>Step 2 · 设计奖励函数</h3>
+            <p>
+              在 <code>rewards.js</code> 中定义到达终点奖励、撞墙惩罚、每步时间成本等，
+              决定智能体会更偏向「走得快」还是「走得稳」。
+            </p>
+          </div>
+        </article>
+
+        <article class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <h3>Step 3 · Q-learning 训练</h3>
+            <p>
+              在 Arena 中按当前超参数反复采样回合，不断更新 Q 表，
+              在探索与利用之间平衡，逐渐学到一条稳定的路径策略。
+            </p>
+          </div>
+        </article>
+
+        <article class="timeline-item">
+          <div class="timeline-dot"></div>
+          <div class="timeline-content">
+            <h3>Step 4 · 可视化与对比</h3>
+            <p>
+              训练统计结果写入浏览器本地，再由训练看板对成功率、平均步数和策略稳定性进行可视化对比，
+              方便课堂展示和实验报告撰写。
+            </p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. 技术栈与架构 -->
+  <section class="about-section" id="tech">
+    <h2>3. 技术栈与架构概览</h2>
+    <p>项目整体采用前端单页多入口的方式，主要技术栈如下：</p>
+    <ul class="about-list-inline">
+      <li>原生 HTML / CSS / JavaScript</li>
+      <li>Three.js（3D 场景与相机控制）</li>
+      <li>Swiper（首页轮播）</li>
+      <li>Chart.js（训练看板图表）</li>
+      <li>Canvas 2D（首页交互粒子背景）</li>
+      <li>localStorage（浏览器本地持久化）</li>
+    </ul>
+    <p>
+      在代码层面，大致可以分成几块：
+    </p>
+    <ul>
+      <li><code>arena_core.js</code>：三维场景、迷宫搭建、相机和灯光控制，以及基础的「小球跑图」引擎。</li>
+      <li><code>arena_rl_core.js</code>：与渲染无关的 Q-learning 核心逻辑，只依赖网格迷宫描述。</li>
+      <li><code>arena_train.js</code>：把三维 arena 和 Q-learning 连接起来，负责一局局地调度训练。</li>
+      <li><code>rewards.js</code>：奖励函数配置与计算，包含到达终点、最短路效率、时间惩罚、陷阱等。</li>
+      <li><code>lab.js</code>：AI 实验室页面逻辑，读写 RL 配置到 <code>localStorage</code>。</li>
+      <li><code>dashboard.js</code>：读取训练快照并绘制图表，生成总结文本。</li>
+    </ul>
+    <p class="about-footer-note">
+      这种拆分方式的好处是：以后如果想尝试别的 RL 算法，只需要在
+      <code>arena_rl_core.js</code> 对应替换实现即可，渲染和界面部分基本不用动。
+    </p>
+  </section>
+
+  <!-- 4. 当前状态与后续计划 -->
+  <section class="about-section" id="roadmap">
+    <h2>4. 当前状态与可能的扩展方向</h2>
+    <p>当前这版 AI Race 已经可以完成课程项目的基本展示需求，后续可以考虑的扩展包括：</p>
+    <ul>
+      <li>支持更多类型的迷宫（分层迷宫、带单向门、动态障碍等）。</li>
+      <li>在编辑器中直接保存 / 载入自定义地图，并一键发送到 Arena。</li>
+      <li>加入 SARSA / DQN 等不同 RL 算法的对比模式。</li>
+      <li>在训练看板中增加「回放入口」，可以选择某局比赛重新在 3D 场景中重播。</li>
+      <li>导出训练数据为 JSON / CSV，便于在 Python / MATLAB 中进一步分析。</li>
+    </ul>
+    <p class="about-footer-note">
+      这些功能很多已经在当前代码结构中预留了思路，只是出于时间和复杂度的考虑暂未完全实现。
+      如果之后有空继续打磨，这个项目可以逐步演变成一个小型的「RL 教学平台」。
+    </p>
+  </section>
+
+  <!-- 5. 致谢 -->
+  <section class="about-section" id="thanks">
+    <h2>5. 致谢 / Acknowledgements</h2>
+    <p>
+      感谢课程老师与同学们在开发过程中的建议，也感谢以下开源项目：
+    </p>
+    <ul>
+      <li>Three.js – 提供友好的 WebGL 封装，让 3D 场景的搭建更加直接。</li>
+      <li>Swiper – 用于首页模块轮播。</li>
+      <li>Chart.js – 轻量的图表库，支撑训练看板的可视化。</li>
+      <li>以及所有为 Web 前端与 AI 可视化生态贡献力量的开发者。</li>
+    </ul>
+    <p class="about-footer-note">
+      如果你对这个项目有任何想法（优化建议、功能扩展或者想一起折腾 RL），
+      欢迎在展示时现场交流。
+    </p>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<!-- 滚动淡入 + 时间线颜色填充脚本 -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sections = document.querySelectorAll('.about-section');
+    const cards = document.querySelectorAll('.about-card');
+    const timeline = document.querySelector('.timeline');
+    const timelineItems = timeline ? timeline.querySelectorAll('.timeline-item') : [];
+
+    const opts = { threshold: 0.18 };
+
+    /* 根据已出现的时间线节点，更新竖线的彩色填充长度 */
+    function updateTimelineProgress() {
+      if (!timeline || !timelineItems.length) return;
+
+      const items = Array.from(timelineItems);
+      let lastIdx = -1;
+      items.forEach((item, idx) => {
+        if (item.classList.contains('is-visible')) lastIdx = idx;
+      });
+
+      const activeLine = timeline.querySelector('.timeline-line-active');
+      if (!activeLine) return;
+
+      if (lastIdx === -1) {
+        timeline.style.setProperty('--timeline-progress', '0');
+        return;
+      }
+
+      const tlRect = timeline.getBoundingClientRect();
+      const lastRect = items[lastIdx].getBoundingClientRect();
+
+      const lineTop = tlRect.top + 4;          // 对应 .timeline-line-active 的 top
+      const total = tlRect.height - 8;         // 有效高度
+      const lastCenter = lastRect.top + lastRect.height * 0.4;
+      const raw = lastCenter - lineTop;
+      const ratio = Math.max(0, Math.min(raw / total, 1));
+
+      timeline.style.setProperty('--timeline-progress', ratio.toFixed(3));
+    }
+
+    function onEnter(entry, observer) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    }
+
+    if ('IntersectionObserver' in window) {
+      // section 整体淡入
+      const sectionObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(e => onEnter(e, observer));
+      }, opts);
+      sections.forEach(sec => sectionObserver.observe(sec));
+
+      // 小卡片淡入
+      const cardObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(e => onEnter(e, observer));
+      }, opts);
+      cards.forEach(card => cardObserver.observe(card));
+
+      // 时间线节点 + 彩色进度线
+      if (timeline && timelineItems.length) {
+        const timelineObserver = new IntersectionObserver((entries, observer) => {
+          let changed = false;
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              e.target.classList.add('is-visible');
+              observer.unobserve(e.target);
+              changed = true;
+            }
+          });
+          if (changed) updateTimelineProgress();
+        }, { threshold: 0.4 });
+
+        timelineItems.forEach(item => timelineObserver.observe(item));
+        window.addEventListener('resize', updateTimelineProgress);
+      }
+    } else {
+      // 兼容性兜底：老浏览器直接全部显示
+      sections.forEach(sec => sec.classList.add('is-visible'));
+      cards.forEach(card => card.classList.add('is-visible'));
+      if (timeline && timelineItems.length) {
+        timelineItems.forEach(item => item.classList.add('is-visible'));
+      }
+    }
+  });
+</script>
+
+</body>
+</html>
+
+
+

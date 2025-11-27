@@ -1,0 +1,106 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <title>NavMesh 编辑器 · Day3</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/style.css" />
+  <style>
+    .topbar{display:flex;gap:16px;align-items:center;justify-content:space-between;
+      padding:10px 16px;background:#121720;border-bottom:1px solid #1c2533;}
+    .toolbar{display:flex;flex-wrap:wrap;gap:8px}
+    .toolbar button{padding:6px 10px;border:1px solid #2c3342;background:#1a2130;
+      color:#dce5f0;border-radius:8px;cursor:pointer}
+    .toolbar button:hover{background:#233049}
+
+    /* HUD 信息面板 */
+    #hud{
+      position:fixed; right:16px; top:80px; width:280px;
+      background:rgba(10,14,20,.78); border:1px solid #1c2533; border-radius:12px;
+      padding:10px 12px; color:#cbd5e1; font-size:12px; line-height:1.45;
+      backdrop-filter: blur(6px); box-shadow:0 8px 24px rgba(0,0,0,.35);
+      max-height:calc(100vh - 110px); overflow:auto; z-index:20;
+    }
+    #hud .card{padding:8px 0; border-bottom:1px solid #202939}
+    #hud .card:last-child{border-bottom:none}
+    #hud h3{margin:0 0 6px 0; font-size:13px; color:#e2e8f0}
+    #hud .row{display:flex; justify-content:space-between; gap:8px}
+    #hud .tiny{color:#94a3b8}
+    #hud .tag{display:inline-block; padding:2px 6px; border-radius:6px; font-size:11px; background:#1a2433}
+    #hud .tag.ok{background:#083344; color:#67e8f9}
+    #hud .tag.bad{background:#3b0a0a; color:#fca5a5}
+    #hud .a{color:#93c5fd}  /* A 蓝 */
+    #hud .b{color:#fdba74}  /* B 橙 */
+    #hud .g{color:#86efac}  /* 绿 */
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div style="font-weight:700">NavMesh 编辑器</div>
+        <button type="button"
+            onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }"
+            style="padding:6px 10px;border:1px solid #2c3342;background:#1a2130;
+                   color:#dce5f0;border-radius:8px;cursor:pointer;">
+      ← 返回
+    </button>
+    <div class="toolbar">
+      <button id="btnAddBox">+ 障碍</button>
+      <button id="btnSetStart">设置起点</button>
+      <button id="btnSetEnd">设置终点</button>
+      <button id="btnBake">烘焙 NavMesh</button>
+      <button id="btnFind">寻路</button>
+      <button id="btnClear">清除</button>
+
+      <!-- 单人回合 -->
+      <button id="btnRun">开始回合</button>
+      <button id="btnPause">暂停/继续</button>
+      <button id="btnReset">复位</button>
+
+      <!-- A/B 竞速 -->
+      <button id="btnRace">开始竞速 A/B</button>
+      <button id="btnRacePause">暂停/继续竞速</button>
+      <button id="btnRaceReset">复位竞速</button>
+    </div>
+  </header>
+
+  <main id="viewport" style="position:relative;height:calc(100vh - 64px);"></main>
+
+  <!-- 信息面板 HUD -->
+  <aside id="hud">
+    <div class="card">
+      <h3>场景 / Scene</h3>
+      <div class="row"><span class="tiny">障碍数</span><span id="hudObs">0</span></div>
+      <div class="row"><span class="tiny">NavMesh</span><span id="hudNav" class="tag bad">未烘焙</span></div>
+    </div>
+    <div class="card">
+      <h3>路径 / Path</h3>
+      <div class="row"><span class="tiny">长度</span><span><span id="hudPathLen">0</span> m</span></div>
+      <div class="row"><span class="tiny">点数</span><span id="hudPts">0</span></div>
+    </div>
+    <div class="card">
+      <h3>单人回合 <span class="g">(绿色)</span></h3>
+      <div class="row"><span class="tiny">状态</span><span id="hudSoloStatus">Idle</span></div>
+      <div class="row"><span class="tiny">速度</span><span id="hudSoloSpeed">0</span></div>
+      <div class="row"><span class="tiny">用时</span><span id="hudSoloTime">0 ms</span></div>
+    </div>
+    <div class="card">
+      <h3>A/B 竞速</h3>
+      <div class="row"><span class="tiny">A <span class="a">(蓝)</span></span><span id="hudRaceA">Idle — 0 ms</span></div>
+      <div class="row"><span class="tiny">B <span class="b">(橙)</span></span><span id="hudRaceB">Idle — 0 ms</span></div>
+      <div class="row"><span class="tiny">胜者</span><span id="hudWinner">—</span></div>
+    </div>
+    <div class="card">
+      <h3>操作提示</h3>
+      <div class="tiny">
+        Shift + 拖动：移动障碍<br>
+        Ctrl + 单击：删除鼠标下障碍<br>
+        Delete：删除选中障碍<br>
+        单击：选中 / 取消高亮
+      </div>
+    </div>
+  </aside>
+
+  <script type="module" src="/src/editor.js"></script>
+</body>
+</html>

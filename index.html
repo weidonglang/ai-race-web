@@ -1,0 +1,150 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Race · 首页</title>
+    <link rel="icon" href="/log.svg">
+    <link rel="stylesheet" href="/src/style.css">
+  </head>
+  <body class="home-bg">
+    <canvas id="bgCanvas"></canvas>
+
+    <!-- 顶部导航 -->
+    <header>
+      <a href="index.html" class="brand">
+        <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+        <span class="brand-text">AI Race</span>
+      </a>
+      <ul class="nav">
+        <!-- 音乐控制：按钮 + 音量 + 当前曲目名 -->
+        <li class="nav-music">
+          <button id="bgMusicToggle" type="button">🎵音乐：关</button>
+          <select id="bgMusicSelect" aria-label="选择曲目">
+            <option value="">随机选择</option>
+          </select>
+          <input id="bgMusicVolume" type="range" min="0" max="1" step="0.05" value="0.5" aria-label="音量" />
+        </li>
+
+        <li>
+          <a href="javascript:void(0)"
+             onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+            ←返回
+          </a>
+        </li>
+
+        <li><a href="editor.html">编辑器</a></li>
+        <li><a href="lab.html">AI 实验室</a></li>
+        <li><a href="dashboard.html">训练看板</a></li>
+        <li><a href="arena.html">对抗 Arena</a></li>
+        <li>
+          <a href="#">更多 ▾</a>
+          <div class="dropdown">
+            <a href="help.html">帮助/原理</a>
+            <a href="about.html">关于</a>
+          </div>
+        </li>
+      </ul>
+    </header>
+
+    <main class="container">
+      <h1 style="margin-bottom: 12px;">三维场地编辑 + 双智能体竞速学习</h1>
+      <p class="hero-intro">
+        这是一个基于 Three.js 的 3D 迷宫 + 双智能体强化学习演示平台。你可以在「编辑器」中搭建场景，在「对抗 Arena」中让 A/B 智能体进化式对抗，
+        并在「训练看板」中观察学习曲线是否收敛。
+      </p>
+
+      <!-- 首屏轮播：每一页是“左文右图”的卡片 -->
+      <div class="swiper hero-swiper">
+        <div class="swiper-wrapper">
+
+          <!-- Slide 1：编辑器 -->
+          <div class="swiper-slide">
+            <div class="hero-grid">
+              <div class="hero-text">
+                <h2>三维场地编辑器 · 拖拽即可搭迷宫</h2>
+                <p class="hero-subtitle">
+                  在浏览器中直接拖拽方块添加/删除障碍，拖动起终点锚点，实时生成场景 JSON。
+                  可供 Arena 对抗和 RL 训练复用。
+                </p>
+                <ul class="hero-bullets">
+                  <li>支持地面 / 相机 / 灯光预设，方便截图演示</li>
+                  <li>拖拽方块即可修改路径结构</li>
+                  <li>一键导出场景 JSON，其它页面直接加载</li>
+                </ul>
+                <a class="hero-link" href="editor.html">进入编辑器 →</a>
+              </div>
+              <div class="hero-image">
+                <img src="imgs/hero-editor.png" alt="三维编辑器示意图">
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 2：对抗 Arena -->
+          <div class="swiper-slide">
+            <div class="hero-grid">
+              <div class="hero-text">
+                <h2>对抗 Arena · 双智能体进化式竞速</h2>
+                <p class="hero-subtitle">
+                  在同一迷宫上，蓝色 A 选手与绿色 B 选手持续对抗。
+                  根据奖励函数自动微调速度与探索偏好，目标是“更快到达终点 + 路线更接近最短”。
+                </p>
+                <ul class="hero-bullets">
+                  <li>支持 easy / medium / hard 多难度预生成迷宫</li>
+                  <li>每一局记录用时、路径、积分与胜负结果</li>
+                  <li>历史数据写入 localStorage，供训练看板分析</li>
+                </ul>
+                <a class="hero-link" href="arena.html">进入对抗 Arena →</a>
+              </div>
+              <div class="hero-image">
+                <img src="imgs/hero-arena.png" alt="对抗 Arena 示意图">
+              </div>
+            </div>
+          </div>
+
+          <!-- Slide 3：RL 训练 + 看板 -->
+          <div class="swiper-slide">
+            <div class="hero-grid">
+              <div class="hero-text">
+                <h2>RL 训练 + 看板 · 观察学习曲线</h2>
+                <p class="hero-subtitle">
+                  两个基于 Q-learning 的智能体在同一迷宫中并行训练；
+                  Dashboard 页面会从 localStorage 读取 <code>arena_rl_dual_stats</code>，
+                  绘制成功率、平均步数与 ε 衰减等统计曲线。
+                </p>
+                <ul class="hero-bullets">
+                  <li>对比不同超参数下的收敛速度与稳定性</li>
+                  <li>查看“首次达到 100% 成功率”的 episode</li>
+                  <li>按难度聚合：easy/medium/hard 各自表现差异</li>
+                </ul>
+                <a class="hero-link" href="dashboard.html">查看训练看板 →</a>
+              </div>
+              <div class="hero-image">
+                <img src="imgs/hero-dashboard.png" alt="训练看板示意图">
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Swiper 控件：分页圆点 + 左右箭头 -->
+        <div class="swiper-pagination"></div>
+        <div class="swiper-button-prev"></div>
+        <div class="swiper-button-next"></div>
+      </div>
+
+      <p class="hero-note">
+        当前版本已完成：多页面导航、编辑器 + NavMesh 寻路、对抗 Arena 与 RL 训练集成，
+        并提供 Dashboard 统计页面用于分析双智能体学习效果。
+      </p>
+    </main>
+
+    <footer class="footer">© 2025 AI Race Demo</footer>
+
+    <div id="pageTimer" class="page-timer" aria-hidden="true">在线 00:00</div>
+
+    <!-- 入口脚本：初始化 Swiper、背景、音乐 -->
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
+

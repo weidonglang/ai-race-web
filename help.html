@@ -1,0 +1,1569 @@
+﻿<!doctype html>
+
+<html lang="zh-CN">
+
+<head>
+
+  <meta charset="UTF-8"/>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+  <title>帮助与原理 · AI Race</title>
+
+  <link rel="icon" href="data:,">
+
+  <link rel="stylesheet" href="/src/style.css"/>
+
+
+
+  <!-- 本页额外样式：帮助文档中心 + 滚动淡入 + 时间线滚动出颜色 -->
+
+  <style>
+
+    main.help-main {
+
+      margin-top: 18px;
+
+      margin-bottom: 40px;
+
+    }
+
+
+
+    /* 顶部 Hero */
+
+    .help-hero {
+
+      border-radius: 22px;
+
+      padding: 22px 22px 18px;
+
+      background:
+
+        radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.18), transparent 55%),
+
+        radial-gradient(circle at 100% 100%, rgba(129, 140, 248, 0.18), transparent 55%),
+
+        #111827;
+
+      border: 1px solid #1f2937;
+
+      display: grid;
+
+      grid-template-columns: minmax(0, 2.2fr) minmax(0, 2fr);
+
+      gap: 18px;
+
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8);
+
+    }
+
+
+
+    .help-hero-left h1 {
+
+      margin: 0 0 8px;
+
+      font-size: 1.7rem;
+
+      letter-spacing: 0.03em;
+
+    }
+
+
+
+    .help-hero-left p {
+
+      margin: 6px 0;
+
+      font-size: 0.96rem;
+
+      line-height: 1.9;
+
+      color: #e5e7eb;
+
+    }
+
+
+
+    .help-hero-left p strong {
+
+      color: #a5b4fc;
+
+    }
+
+
+
+    .help-hero-tags {
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 8px;
+
+      margin-top: 10px;
+
+    }
+
+
+
+    .help-pill {
+
+      display: inline-flex;
+
+      align-items: center;
+
+      gap: 6px;
+
+      padding: 3px 10px;
+
+      border-radius: 999px;
+
+      font-size: 0.8rem;
+
+      background: #020617;
+
+      border: 1px solid #334155;
+
+      color: #e5e7eb;
+
+      white-space: nowrap;
+
+    }
+
+
+
+    .help-pill-dot {
+
+      width: 7px;
+
+      height: 7px;
+
+      border-radius: 999px;
+
+      background: radial-gradient(circle at 30% 30%, #ecfeff, #22d3ee);
+
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+
+    }
+
+
+
+    .help-hero-right {
+
+      font-size: 0.86rem;
+
+      color: #cbd5f5;
+
+      display: flex;
+
+      flex-direction: column;
+
+      justify-content: center;
+
+      gap: 6px;
+
+    }
+
+
+
+    .help-hero-right h2 {
+
+      margin: 0 0 6px;
+
+      font-size: 0.98rem;
+
+    }
+
+
+
+    .help-kv {
+
+      display: grid;
+
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr);
+
+      gap: 4px 10px;
+
+      margin-top: 4px;
+
+    }
+
+
+
+    .help-kv span:first-child {
+
+      color: #9ca3af;
+
+    }
+
+
+
+    .help-hero-right small {
+
+      display: block;
+
+      margin-top: 6px;
+
+      color: #9ca3af;
+
+    }
+
+
+
+    /* 通用 section + 滚动淡入动画 + 顶部彩色细线 */
+
+    .help-section {
+
+      margin-top: 26px;
+
+      padding-top: 18px;
+
+      position: relative;
+
+      opacity: 0;
+
+      transform: translateY(18px);
+
+      transition:
+
+        opacity 0.55s ease-out,
+
+        transform 0.55s ease-out;
+
+      will-change: opacity, transform;
+
+    }
+
+
+
+    /* section 顶部的横向渐变色线条，随着滚动出现 */
+
+    .help-section::before {
+
+      content: "";
+
+      position: absolute;
+
+      left: 0;
+
+      top: 0;
+
+      height: 2px;
+
+      width: 100%;
+
+      background: linear-gradient(
+
+        to right,
+
+        #1f2937 0,
+
+        #22c55e 22%,
+
+        #22d3ee 52%,
+
+        #a855f7 82%,
+
+        #1f2937 100%
+
+      );
+
+      transform-origin: left center;
+
+      transform: scaleX(0);
+
+      opacity: 0.75;
+
+      transition: transform 0.85s cubic-bezier(0.19, 1, 0.22, 1);
+
+    }
+
+
+
+    .help-section.is-visible {
+
+      opacity: 1;
+
+      transform: translateY(0);
+
+    }
+
+
+
+    .help-section.is-visible::before {
+
+      transform: scaleX(1);
+
+    }
+
+
+
+    .help-section h2 {
+
+      font-size: 1.08rem;
+
+      margin-bottom: 6px;
+
+    }
+
+
+
+    .help-section p {
+
+      font-size: 0.94rem;
+
+      line-height: 1.9;
+
+      color: #e5e7eb;
+
+      margin: 6px 0;
+
+    }
+
+
+
+    .help-section ul {
+
+      margin: 6px 0 4px;
+
+      padding-left: 18px;
+
+      font-size: 0.93rem;
+
+      line-height: 1.9;
+
+      color: #d1d5db;
+
+    }
+
+
+
+    /* 网站结构卡片 */
+
+    .help-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+
+      gap: 14px;
+
+      margin-top: 10px;
+
+    }
+
+
+
+    .help-card {
+
+      border-radius: 14px;
+
+      background:
+
+        radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.1), transparent 55%),
+
+        #020617;
+
+      border: 1px solid #1f2937;
+
+      padding: 10px 12px 10px;
+
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75);
+
+      font-size: 0.9rem;
+
+      opacity: 0;
+
+      transform: translateY(16px) scale(0.98);
+
+      transition:
+
+        opacity 0.45s ease-out,
+
+        transform 0.45s ease-out,
+
+        border-color 0.2s ease-out,
+
+        box-shadow 0.2s ease-out;
+
+      will-change: opacity, transform;
+
+    }
+
+
+
+    .help-card.is-visible {
+
+      opacity: 1;
+
+      transform: translateY(0) scale(1);
+
+    }
+
+
+
+    .help-card h3 {
+
+      margin: 0 0 4px;
+
+      font-size: 0.96rem;
+
+    }
+
+
+
+    .help-card p {
+
+      margin: 0;
+
+      font-size: 0.86rem;
+
+      line-height: 1.8;
+
+      color: #cbd5f5;
+
+    }
+
+
+
+    .help-card strong {
+
+      color: #a5b4fc;
+
+    }
+
+
+
+    .help-tag {
+
+      display: inline-block;
+
+      margin-left: 6px;
+
+      padding: 1px 6px;
+
+      border-radius: 999px;
+
+      font-size: 0.7rem;
+
+      background: #020617;
+
+      border: 1px solid #334155;
+
+      color: #a5b4fc;
+
+    }
+
+
+
+    /* 开发流程小时间线 + 滚动彩色进度条 */
+
+    .flow-timeline {
+
+      position: relative;
+
+      margin-top: 10px;
+
+      padding-left: 24px;
+
+    }
+
+
+
+    /* 灰色基础轨道 */
+
+    .flow-timeline::before {
+
+      content: "";
+
+      position: absolute;
+
+      left: 7px;
+
+      top: 4px;
+
+      bottom: 4px;
+
+      width: 2px;
+
+      background: linear-gradient(to bottom, #1f2937, #020617);
+
+    }
+
+
+
+    /* 彩色进度线：随着滚动从上往下“长出来” */
+
+    .flow-progress {
+
+      position: absolute;
+
+      left: 7px;
+
+      top: 4px;
+
+      width: 2px;
+
+      height: 0;
+
+      background: linear-gradient(to bottom, #22c55e, #22d3ee, #a855f7);
+
+      border-radius: 999px;
+
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.6);
+
+      pointer-events: none;
+
+      transition: height 0.22s ease-out;
+
+    }
+
+
+
+    .flow-item {
+
+      position: relative;
+
+      padding: 8px 0 10px 6px;
+
+      opacity: 0.3;
+
+      transform: translateY(12px);
+
+      transition: opacity 0.45s ease-out, transform 0.45s ease-out;
+
+    }
+
+
+
+    .flow-item-dot {
+
+      position: absolute;
+
+      left: -11px;
+
+      top: 11px;
+
+      width: 14px;
+
+      height: 14px;
+
+      border-radius: 999px;
+
+      border: 2px solid #4b5563;
+
+      background: #020617;
+
+      box-shadow: none;
+
+      transition:
+
+        border-color 0.35s ease-out,
+
+        background 0.35s ease-out,
+
+        box-shadow 0.35s ease-out,
+
+        transform 0.35s ease-out;
+
+    }
+
+
+
+    .flow-item h3 {
+
+      margin: 0 0 3px;
+
+      font-size: 0.95rem;
+
+    }
+
+
+
+    .flow-item p {
+
+      margin: 0;
+
+      font-size: 0.86rem;
+
+      line-height: 1.8;
+
+      color: #cbd5f5;
+
+    }
+
+
+
+    .flow-item.is-visible {
+
+      opacity: 1;
+
+      transform: translateY(0);
+
+    }
+
+
+
+    .flow-item.is-visible .flow-item-dot {
+
+      border-color: #38bdf8;
+
+      background: radial-gradient(circle at 30% 30%, #e0f2fe, #06b6d4);
+
+      box-shadow: 0 0 14px rgba(56, 189, 248, 0.9);
+
+      transform: scale(1.06);
+
+    }
+
+
+
+    /* 文档导航列表 */
+
+    .help-doc-list {
+
+      list-style: none;
+
+      padding-left: 0;
+
+      margin: 8px 0 2px;
+
+      font-size: 0.9rem;
+
+    }
+
+
+
+    .help-doc-list li {
+
+      display: flex;
+
+      flex-wrap: wrap;
+
+      gap: 4px;
+
+      align-items: baseline;
+
+      padding: 6px 0;
+
+      border-bottom: 1px dashed #1f2937;
+
+    }
+
+
+
+    .help-doc-list li:last-child {
+
+      border-bottom: none;
+
+    }
+
+
+
+    .help-doc-list a {
+
+      font-weight: 500;
+
+      color: #e5e7eb;
+
+    }
+
+
+
+    .help-doc-list a:hover {
+
+      color: #60a5fa;
+
+    }
+
+
+
+    .help-doc-desc {
+
+      font-size: 0.84rem;
+
+      color: #9ca3af;
+
+    }
+
+
+
+    .help-note {
+
+      font-size: 0.84rem;
+
+      color: #9ca3af;
+
+      margin-top: 6px;
+
+    }
+
+
+
+    @media (max-width: 860px) {
+
+      .help-hero {
+
+        grid-template-columns: minmax(0, 1fr);
+
+        padding: 18px 16px 16px;
+
+      }
+
+    }
+
+  </style>
+
+  <!-- 新主题样式：玻璃感卡片 + 渐变色条 + 返回按钮 -->
+  <style>
+    :root{
+      --help-accent: #38bdf8;
+      --help-accent-2: #a78bfa;
+      --help-surface: #0b1120;
+      --help-border: #1f2937;
+      --help-muted: #c9d5eb;
+    }
+    main.help-main {
+      margin-top: 16px;
+      margin-bottom: 48px;
+    }
+    .help-hero {
+      border-radius: 18px;
+      padding: 22px 24px 18px;
+      background:
+        linear-gradient(135deg, rgba(56,189,248,0.14), rgba(167,139,250,0.12)),
+        radial-gradient(circle at 8% 0%, rgba(56,189,248,0.16), transparent 52%),
+        radial-gradient(circle at 92% 100%, rgba(167,139,250,0.20), transparent 55%),
+        var(--help-surface);
+      border: 1px solid var(--help-border);
+      box-shadow: 0 22px 60px rgba(0,0,0,0.72);
+      position: relative;
+      overflow: hidden;
+    }
+    .help-hero::before{
+      content:"";
+      position:absolute;
+      top:0; left:0; right:0;
+      height:3px;
+      background:linear-gradient(90deg, var(--help-accent), var(--help-accent-2));
+      opacity:0.9;
+    }
+    .help-hero-left h1{
+      font-size: 1.8rem;
+      letter-spacing: 0.02em;
+    }
+    .help-hero-left p{
+      color: var(--help-muted);
+    }
+    .help-pill{
+      background: rgba(11,17,32,0.9);
+      border-color: color-mix(in srgb, var(--help-accent) 40%, var(--help-border) 60%);
+      color: #e5e7eb;
+    }
+    .help-card{
+      border-radius: 14px;
+      background:
+        linear-gradient(145deg, rgba(56,189,248,0.10), rgba(167,139,250,0.08)),
+        var(--help-surface);
+      border: 1px solid var(--help-border);
+      padding: 12px 14px 12px;
+      box-shadow: 0 18px 44px rgba(0,0,0,0.65);
+      opacity: 0;
+      transform: translateY(14px) scale(0.99);
+      transition:
+        opacity .5s ease-out,
+        transform .5s ease-out,
+        border-color .25s ease,
+        box-shadow .25s ease;
+      position: relative;
+      overflow:hidden;
+    }
+    .help-card::before{
+      content:"";
+      position:absolute;
+      top:0; left:0; right:0;
+      height:3px;
+      background: linear-gradient(90deg, var(--help-accent), var(--help-accent-2));
+      opacity:0.85;
+    }
+    .help-card.is-visible{
+      opacity:1;
+      transform: translateY(0) scale(1);
+      border-color: color-mix(in srgb, var(--help-accent) 55%, var(--help-border) 45%);
+      box-shadow: 0 20px 52px rgba(0,0,0,0.7);
+    }
+    .help-card h3{
+      font-size: 1rem;
+      margin-top: 2px;
+    }
+    .help-card p{
+      color: var(--help-muted);
+      line-height: 1.75;
+    }
+    .help-section{
+      border:1px solid var(--help-border);
+      border-left:3px solid var(--help-accent);
+      background:
+        linear-gradient(135deg, rgba(56,189,248,0.12), rgba(167,139,250,0.08)),
+        var(--help-surface);
+      box-shadow: 0 20px 56px rgba(0,0,0,0.7);
+    }
+    .help-section::before{
+      background: linear-gradient(120deg, rgba(56,189,248,0.18), rgba(167,139,250,0.18), rgba(56,189,248,0.08));
+      border-radius: 14px;
+      opacity:0.35;
+    }
+    .help-section.is-visible{
+      border-color: color-mix(in srgb, var(--help-accent) 60%, var(--help-border) 40%);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.75);
+    }
+    .help-section h2{
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .help-section h2::after{
+      content:"";
+      flex:1;
+      height:1px;
+      background: linear-gradient(90deg, rgba(56,189,248,0.5), rgba(167,139,250,0));
+    }
+    .help-section p, .help-section ul{
+      color: var(--help-muted);
+    }
+    .help-section ul{
+      line-height: 1.7;
+    }
+    .help-kv span:first-child{
+      color: #94a3b8;
+    }
+    .flow-timeline{
+      border-color: color-mix(in srgb, var(--help-accent) 50%, var(--help-border) 50%);
+    }
+    .flow-progress{
+      background: linear-gradient(180deg, var(--help-accent), var(--help-accent-2));
+    }
+    /* 返回按钮 */
+    .help-topbar{
+      max-width: 1100px;
+      margin: 14px auto 0;
+      padding: 0 18px;
+      display: flex;
+      justify-content: flex-start;
+      gap: 10px;
+    }
+    .help-back{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 14px;
+      border-radius:12px;
+      border:1px solid color-mix(in srgb, var(--help-accent) 55%, var(--help-border) 45%);
+      background:linear-gradient(120deg, var(--help-accent), var(--help-accent-2));
+      color:#e5e7eb;
+      cursor:pointer;
+      font-size:13px;
+      letter-spacing:0.1px;
+      box-shadow:0 12px 30px rgba(0,0,0,0.35);
+      transition:transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .help-back:hover{
+      transform:translateY(-1px);
+      filter:brightness(1.05);
+      box-shadow:0 16px 34px rgba(0,0,0,0.4);
+    }
+    .help-back:active{
+      transform:translateY(0);
+      box-shadow:0 10px 24px rgba(0,0,0,0.32);
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <a href="index.html" class="brand">
+    <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+    <span class="brand-text">AI Race</span>
+  </a>
+  <ul class="nav">
+
+    <li>
+
+      <a href="javascript:void(0)"
+
+         onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+
+        ← 返回
+
+      </a>
+
+    </li>
+
+
+
+    <li><a href="editor.html">编辑器</a></li>
+
+    <li><a href="lab.html">AI 实验室</a></li>
+
+    <li><a href="dashboard.html">训练看板</a></li>
+
+    <li><a href="arena.html">对抗 Arena</a></li>
+
+    <li>
+
+      <a href="javascript:void(0)">更多 ▾</a>
+
+      <div class="dropdown">
+
+        <!-- 已经去掉回放库，只保留帮助和关于 -->
+
+        <a href="help.html">帮助/原理</a>
+
+        <a href="about.html">关于</a>
+
+      </div>
+
+    </li>
+
+  </ul>
+
+</header>
+
+<div class="help-topbar">
+  <button class="help-back" type="button"
+    onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+    ← 返回
+  </button>
+</div>
+
+<main class="container help-main">
+  <!-- 顶部说明：这是“文档中心” -->
+
+  <section class="help-hero">
+
+    <div class="help-hero-left">
+
+      <h1>帮助与原理说明</h1>
+
+      <p>
+
+        这里是 AI Race 的 <strong>文档与教程中心</strong>：
+
+        如果你想了解每个页面的用途、强化学习原理，或者只是想快速查到某个参数的含义，
+
+        都可以从本页给出的目录跳转到对应子页面。
+
+      </p>
+
+      <p>
+
+        同时，本页也简单梳理了本网站的<strong>整体结构</strong>和<strong>开发流程</strong>，
+
+        方便课堂展示和说明。
+      </p>
+
+
+
+      <div class="help-hero-tags">
+
+        <span class="help-pill">
+
+          <span class="help-pill-dot"></span> 文档导航 / Documentation Hub
+
+        </span>
+
+        <span class="help-pill">强化学习原理小结</span>
+
+        <span class="help-pill">网站结构 / 开发流程说明</span>
+
+      </div>
+
+    </div>
+
+
+
+    <aside class="help-hero-right">
+
+      <h2>网站结构速览</h2>
+
+      <div class="help-kv">
+
+        <span>首页</span>
+
+        <span><code>index.html</code> – 项目总入口 + 轮播介绍</span>
+
+        <span>主要功能页</span>
+
+        <span>编辑器 / AI 实验室 / Arena / 训练看板 / RL Demo / 关于</span>
+
+        <span>文档页</span>
+
+        <span>若干帮助 / 原理 / 案例页面（本页下方列出）</span>
+
+      </div>
+
+      <small>
+
+        这些功能页面和文档页面共同构成完整的项目结构。
+      </small>
+
+    </aside>
+
+  </section>
+
+
+
+  <!-- 1. 网站主要页面结构 -->
+
+  <section class="help-section" id="site-structure">
+
+    <h2>1. 网站主要页面结构</h2>
+
+    <p>AI Race 的核心页面可以分成两大类：<strong>功能页</strong> 和 <strong>文档说明页</strong>。</p>
+
+
+
+    <div class="help-grid">
+
+      <article class="help-card">
+
+        <h3>功能页（交互与演示）<span class="help-tag">主要体验</span></h3>
+
+        <p>
+
+          包含：<br>
+
+          <strong>首页</strong> <code>index.html</code> – 项目介绍与入口；<br>
+
+          <strong>编辑器</strong> <code>editor.html</code> – 3D 场景 / NavMesh 编辑；<br>
+
+          <strong>AI 实验室</strong> <code>lab.html</code> – RL 参数配置；<br>
+
+          <strong>Arena</strong> <code>arena.html</code> – 3D 迷宫对抗与训练；<br>
+
+          <strong>训练看板</strong> <code>dashboard.html</code> – 曲线与统计；<br>
+
+          <strong>RL Demo</strong> <code>rl.html</code> – 2D 网格世界 Q-learning 示例。
+
+        </p>
+
+      </article>
+
+
+
+      <article class="help-card">
+
+        <h3>说明页（帮助 / 原理 / 关于）<span class="help-tag">文字说明</span></h3>
+
+        <p>
+
+          包含：<br>
+
+          <strong>帮助/原理</strong> <code>help.html</code>（本页） – 文档目录；<br>
+
+          <strong>关于</strong> <code>about.html</code> – 项目背景与设计目标；<br>
+
+          以及若干「原理解析页」与「案例分析页」，用于详细解释算法、参数和实验结果。
+
+        </p>
+
+      </article>
+
+
+
+      <article class="help-card">
+
+        <h3>数据与存储结构<span class="help-tag">localStorage</span></h3>
+
+        <p>
+
+          网站不依赖后端数据库，所有训练记录和配置均存放在浏览器
+
+          <code>localStorage</code> 中，例如：<br>
+
+          <code>ai_lab_params</code> – RL 参数设置；<br>
+
+          <code>arena_rl_dual_stats</code> – 双智能体训练统计；<br>
+
+          <code>arena_runs</code> / <code>ai_runs</code> – 竞速与测试记录。
+
+        </p>
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+
+  <!-- 2. 开发流程：对应老师要求的“网站开发流程” -->
+
+  <section class="help-section" id="dev-flow">
+
+    <h2>2. 网站开发流程（对应课程要求）</h2>
+
+    <p>
+
+      按照课程要求，本项目基本遵循了标准的网站开发流程，可以概括为以下几个步骤：
+
+    </p>
+
+
+
+    <div class="flow-timeline">
+
+      <!-- 彩色进度线：JS 会根据滚动更新高度 -->
+
+      <div class="flow-progress"></div>
+
+
+
+      <div class="flow-item">
+
+        <div class="flow-item-dot"></div>
+
+        <div>
+
+          <h3>Step 1 · 网站结构与首页原型设计</h3>
+
+          <p>
+
+            先草拟网站信息架构：确定首页、编辑器、Arena、看板、实验室、帮助、关于等主要页面，
+
+            在纸上/工具中画出首页与关键页面的效果草图，决定整体配色与风格。
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="flow-item">
+
+        <div class="flow-item-dot"></div>
+
+        <div>
+
+          <h3>Step 2 · 制作网页素材与组件</h3>
+
+          <p>
+
+            利用现有素材和简单图形工具，准备 3D 场景用到的贴图、图标，以及首页轮播图等；
+
+            同时抽象出导航栏、卡片、按钮等复用组件，统一视觉风格。
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="flow-item">
+
+        <div class="flow-item-dot"></div>
+
+        <div>
+
+          <h3>Step 3 · 构建文件结构与页面布局</h3>
+
+          <p>
+
+            按页面拆分 HTML 文件：<code>index.html</code>、<code>editor.html</code>、
+
+            <code>arena.html</code> 等；公共样式集中在 <code>src/style.css</code>，
+
+            各页面的脚本放在独立的 <code>.js</code> 文件中，方便维护与扩展。
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="flow-item">
+
+        <div class="flow-item-dot"></div>
+
+        <div>
+
+          <h3>Step 4 · 制作动画与交互逻辑</h3>
+
+          <p>
+
+            使用 Three.js 搭建 3D 场景、实现小球运动与摄像机跟随；
+
+            使用 Chart.js 绘制训练曲线；
+
+            在 Lab 页面加入表单校验，在 Help / About 页面加入随滚动淡入的说明区块。
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+
+      <div class="flow-item">
+
+        <div class="flow-item-dot"></div>
+
+        <div>
+
+          <h3>Step 5 · 实现 Web 功能并测试</h3>
+
+          <p>
+
+            完成 Q-learning 训练与统计逻辑，实现双智能体对抗与数据写入 localStorage；
+
+            对不同浏览器尺寸进行测试，检查导航菜单、动画与交互是否正常，
+
+            并根据课程要求补充文档与说明页面。
+
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+
+    <p class="help-note">
+
+      可以直接参考以上步骤来描述项目开发过程。
+    </p>
+
+  </section>
+
+
+
+  <!-- 3. 文档与教程导航：这里列出你将要新增的 12 个说明/案例页面 -->
+
+  <section class="help-section" id="docs">
+
+    <h2>3. 文档与教程导航（子页面目录）</h2>
+
+    <p>
+
+      以下是本网站的「原理说明」与「案例分析」子页面目录：
+
+    </p>
+
+
+
+    <ul class="help-doc-list">
+
+      <li>
+
+        <a href="help_navmesh.html">导航网格与路径规划原理</a>
+
+        <span class="help-doc-desc">介绍 NavMesh 的概念、烘焙流程，以及在编辑器 / Arena 中的具体使用方式。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_world.html">迷宫网格世界建模说明</a>
+
+        <span class="help-doc-desc">解释 3D 迷宫如何被离散为网格世界，并与强化学习状态空间对应。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_qlearning.html">Q-learning 算法与更新公式</a>
+
+        <span class="help-doc-desc">从公式、伪代码和项目中的实现三个角度讲解 Q-learning。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_rewards.html">奖励函数设计：时间、碰撞与效率</a>
+
+        <span class="help-doc-desc">详细说明 <code>rewards.js</code> 中各种奖励和惩罚项的含义与取舍。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_exploration.html">ε-贪心探索策略与衰减</a>
+
+        <span class="help-doc-desc">讨论探索–利用平衡、ε 的衰减方式以及它对收敛速度的影响。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_lab.html">AI 实验室参数说明</a>
+
+        <span class="help-doc-desc">逐项解释 Lab 页面中的设置项：episode 数、α、γ、ε 初值与衰减系数等。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_arena_usage.html">Arena 使用教程</a>
+
+        <span class="help-doc-desc">从进入页面到开始训练与对抗的全流程操作说明。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_dashboard_usage.html">训练看板图表讲解</a>
+
+        <span class="help-doc-desc">说明每一张 Chart.js 曲线所代表的含义，以及如何解读双智能体对比结果。</span>
+
+      </li>
+
+      <li>
+
+        <a href="help_shortcuts.html">操作与快捷键一览</a>
+
+        <span class="help-doc-desc">集中列出编辑器、Arena 等页面的常用操作和键盘快捷键。</span>
+
+      </li>
+
+      <li>
+
+        <a href="case_easy.html">案例一：简单迷宫训练结果</a>
+
+        <span class="help-doc-desc">展示一个简单迷宫地图的训练过程与收敛曲线，用作入门示例。</span>
+
+      </li>
+
+      <li>
+
+        <a href="case_medium.html">案例二：中等迷宫与参数对比</a>
+
+        <span class="help-doc-desc">在中等复杂度迷宫上对比不同参数配置对训练效果的影响。</span>
+
+      </li>
+
+      <li>
+
+        <a href="case_hard.html">案例三：困难迷宫与失败分析</a>
+
+        <span class="help-doc-desc">讨论在复杂迷宫中训练不稳定或失败的情况，并分析可能原因。</span>
+
+      </li>
+
+      <li>
+
+        <a href="faq.html">常见问题（FAQ）</a>
+
+        <span class="help-doc-desc">收集部署、浏览器兼容性、数据清空等常见问题及解决办法。</span>
+
+      </li>
+
+    </ul>
+
+  </section>
+
+
+
+  <!-- 4. 使用建议 -->
+
+  <section class="help-section" id="tips">
+
+    <h2>4. 使用与学习建议</h2>
+
+    <p>
+
+      如果你是首次接触这个项目，可以按下面的顺序来体验和学习：
+
+    </p>
+
+    <ul>
+
+      <li>先在 <strong>首页</strong> 浏览整体介绍，了解各个模块的用途。</li>
+
+      <li>进入 <strong>编辑器</strong> 搭建一个简单迷宫，感受 NavMesh 寻路的效果。</li>
+
+      <li>在 <strong>AI 实验室</strong> 设置一组基础参数，并在 <strong>Arena</strong> 中启动训练与对抗。</li>
+
+      <li>打开 <strong>训练看板</strong> 查看曲线，并参考「案例」与「原理」子页面，理解背后的强化学习逻辑。</li>
+
+    </ul>
+
+  </section>
+
+</main>
+
+
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+
+
+<!-- 滚动淡入动画 + 时间线出颜色脚本 -->
+
+<script>
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    const sections = document.querySelectorAll('.help-section');
+
+    const cards = document.querySelectorAll('.help-card');
+
+    const flows = document.querySelectorAll('.flow-item');
+
+
+
+    if (!('IntersectionObserver' in window)) {
+
+      sections.forEach(s => s.classList.add('is-visible'));
+
+      cards.forEach(c => c.classList.add('is-visible'));
+
+      flows.forEach(f => f.classList.add('is-visible'));
+
+    } else {
+
+      const sectionObserver = new IntersectionObserver((entries, observer) => {
+
+        entries.forEach(e => {
+
+          if (e.isIntersecting) {
+
+            e.target.classList.add('is-visible');
+
+            observer.unobserve(e.target);
+
+          }
+
+        });
+
+      }, { threshold: 0.18 });
+
+
+
+      sections.forEach(sec => sectionObserver.observe(sec));
+
+
+
+      const cardObserver = new IntersectionObserver((entries, observer) => {
+
+        entries.forEach(e => {
+
+          if (e.isIntersecting) {
+
+            e.target.classList.add('is-visible');
+
+            observer.unobserve(e.target);
+
+          }
+
+        });
+
+      }, { threshold: 0.18 });
+
+
+
+      cards.forEach(card => cardObserver.observe(card));
+
+
+
+      const flowObserver = new IntersectionObserver((entries, observer) => {
+
+        entries.forEach(e => {
+
+          if (e.isIntersecting) {
+
+            e.target.classList.add('is-visible');
+
+            observer.unobserve(e.target);
+
+          }
+
+        });
+
+      }, { threshold: 0.2 });
+
+
+
+      flows.forEach(flow => flowObserver.observe(flow));
+
+    }
+
+
+
+    /* 时间线滚动彩色进度条：随着滚动向下，颜色一点一点“生长” */
+
+    const timeline = document.querySelector('.flow-timeline');
+
+    const progressLine = timeline ? timeline.querySelector('.flow-progress') : null;
+
+
+
+    function updateTimelineProgress() {
+      if (!timeline || !progressLine) return;
+
+
+      const rect = timeline.getBoundingClientRect();
+
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+
+
+
+      // 取视口中偏上的一个参考线位置
+
+      const center = vh * 0.45;
+
+
+
+      // 计算参考线相对于时间线顶部的进度百分比
+
+      const progress = (center - rect.top) / rect.height;
+
+      const clamped = Math.max(0, Math.min(1, progress));
+
+
+
+      progressLine.style.height = (clamped * 100) + '%';
+
+    }
+
+
+
+    updateTimelineProgress();
+    window.addEventListener('scroll', updateTimelineProgress, { passive: true });
+    window.addEventListener('resize', updateTimelineProgress);
+
+    // Easter egg: up up down down left right left right B A B A -> open game.html
+    const secretSeq = [
+      'ArrowUp', 'ArrowUp',
+      'ArrowDown', 'ArrowDown',
+      'ArrowLeft', 'ArrowRight',
+      'ArrowLeft', 'ArrowRight',
+      'KeyB', 'KeyA',
+      'KeyB', 'KeyA'
+    ];
+    const keyBuffer = [];
+    window.addEventListener('keydown', (e) => {
+      keyBuffer.push(e.code);
+      if (keyBuffer.length > secretSeq.length) keyBuffer.shift();
+      const matched = secretSeq.every((code, i) => keyBuffer[i] === code);
+      if (matched) {
+        window.location.href = 'game.html';
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
+

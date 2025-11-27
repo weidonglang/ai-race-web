@@ -1,0 +1,398 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Q-learning 算法与更新公式 · AI Race</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <!-- 局部样式：文档页 + 滚动淡入 + 顶部彩色线 -->
+  <style>
+    main.doc-main {
+      margin-top: 18px;
+      margin-bottom: 40px;
+    }
+
+    .doc-hero {
+      border-radius: 20px;
+      padding: 20px 20px 16px;
+      background:
+        radial-gradient(circle at 0% 0%, rgba(56, 189, 248, 0.18), transparent 55%),
+        radial-gradient(circle at 100% 100%, rgba(129, 140, 248, 0.2), transparent 55%),
+        #020617;
+      border: 1px solid #1f2937;
+      box-shadow: 0 22px 50px rgba(0, 0, 0, 0.8);
+    }
+
+    .doc-hero h1 {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+      letter-spacing: 0.03em;
+    }
+
+    .doc-hero p {
+      margin: 4px 0;
+      font-size: 0.95rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+    }
+
+    .doc-hero strong {
+      color: #a5b4fc;
+    }
+
+    .doc-hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-top: 8px;
+      font-size: 0.82rem;
+      color: #9ca3af;
+    }
+
+    .doc-pill {
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #334155;
+      background: #020617;
+      color: #e5e7eb;
+      font-size: 0.8rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .doc-pill-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #ecfeff, #22d3ee);
+      box-shadow: 0 0 8px rgba(56, 189, 248, 0.9);
+    }
+
+    /* 通用 section + 顶部渐变色线 + 淡入 */
+    .doc-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      position: relative;
+      opacity: 0;
+      transform: translateY(18px);
+      transition:
+        opacity 0.55s ease-out,
+        transform 0.55s ease-out;
+      will-change: opacity, transform;
+    }
+
+    .doc-section::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 2px;
+      width: 100%;
+      background: linear-gradient(
+        to right,
+        #111827 0,
+        #22c55e 18%,
+        #22d3ee 50%,
+        #a855f7 82%,
+        #111827 100%
+      );
+      transform-origin: left center;
+      transform: scaleX(0);
+      opacity: 0.8;
+      transition: transform 0.9s cubic-bezier(0.19, 1, 0.22, 1);
+    }
+
+    .doc-section.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .doc-section.is-visible::before {
+      transform: scaleX(1);
+    }
+
+    .doc-section h2 {
+      font-size: 1.08rem;
+      margin-bottom: 6px;
+    }
+
+    .doc-section h3 {
+      font-size: 0.98rem;
+      margin: 8px 0 4px;
+    }
+
+    .doc-section p {
+      font-size: 0.93rem;
+      line-height: 1.9;
+      color: #e5e7eb;
+      margin: 4px 0;
+    }
+
+    .doc-section ul {
+      margin: 4px 0 4px 18px;
+      padding-left: 0;
+      font-size: 0.92rem;
+      line-height: 1.9;
+      color: #d1d5db;
+    }
+
+    .doc-section ol {
+      margin: 4px 0 4px 18px;
+      padding-left: 0;
+      font-size: 0.92rem;
+      line-height: 1.9;
+      color: #d1d5db;
+    }
+
+    .doc-note {
+      font-size: 0.84rem;
+      color: #9ca3af;
+      margin-top: 6px;
+    }
+
+    .doc-inline-code {
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.85em;
+    }
+
+    @media (max-width: 720px) {
+      .doc-hero {
+        padding: 16px 14px 14px;
+      }
+    }
+  </style>
+
+  <!-- 返回按钮统一样式（与文档主题色呼应） -->
+  <style>
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--doc-accent, #38bdf8) 55%, #1f2937 45%);
+      background: linear-gradient(120deg, var(--doc-accent, #38bdf8), var(--doc-accent-2, #a855f7));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .back-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.4);
+    }
+    .back-btn:active{
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.32);
+    }
+  </style>
+</head>
+<body>
+<header class="doc-header">
+  <div class="doc-header-inner">
+    <a href="index.html" class="brand">
+      <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+      <span class="brand-text">AI Race</span>
+    </a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+        <button class="back-btn" onclick="if (history.length > 1) history.back(); else location.href='index.html'">返回</button>
+  </div>
+</header>
+
+<main class="container doc-main">
+  <section class="doc-hero">
+    <h1>Q-learning 算法与更新公式</h1>
+    <p>
+      本页从 <strong>数学公式</strong>、<strong>伪代码</strong> 与 <strong>项目中的实现</strong> 三个角度，
+      说明 Q-learning 如何在迷宫中学习一条尽量短、尽量安全的路径。
+    </p>
+    <p>
+      直观地说，Q-learning 就是在不断给「在某个格子做某个动作」打分，
+      打分越高，智能体越倾向于选择那种走法。
+    </p>
+    <div class="doc-hero-meta">
+      <span class="doc-pill">
+        <span class="doc-pill-dot"></span> 关键词：Q 表 / 时序差分 / 无模型强化学习
+      </span>
+      <span class="doc-pill">关联页面：rl.html / arena_rl.html / help_rewards.html</span>
+    </div>
+  </section>
+
+  <section class="doc-section">
+    <h2>1. Q-learning 在做什么？</h2>
+    <p>
+      Q-learning 属于典型的<strong>无模型（model-free）</strong>强化学习：
+      我们假设不知道环境的转移概率，只能通过「反复尝试」来学习策略。
+    </p>
+    <p>
+      算法维护一张 <strong>Q 表（Q-table）</strong>：
+      <span class="doc-inline-code">Q(s, a)</span> 表示在状态 <span class="doc-inline-code">s</span>
+      下执行动作 <span class="doc-inline-code">a</span> 的长期期望回报。
+    </p>
+    <ul>
+      <li>如果某个 <span class="doc-inline-code">(s, a)</span> 经常带来高奖励，Q 值就会被拉高；</li>
+      <li>如果经常导致碰撞、超时，Q 值就会变低；</li>
+      <li>最终，智能体只要在每个状态选择 Q 最大的动作，就能得到一个接近最优的策略。</li>
+    </ul>
+  </section>
+
+  <section class="doc-section">
+    <h2>2. 经典 Q-learning 更新公式</h2>
+    <p>
+      当智能体从状态 <span class="doc-inline-code">s</span> 执行动作
+      <span class="doc-inline-code">a</span>，获得奖励 <span class="doc-inline-code">r</span>，
+      来到新状态 <span class="doc-inline-code">s'</span> 时，
+      我们使用下面的更新规则：
+    </p>
+    <p>
+      <span class="doc-inline-code">
+        Q(s, a) ← (1 − α) · Q(s, a) + α · (r + γ · max<sub>a'</sub> Q(s', a'))
+      </span>
+    </p>
+    <p>或写成「增量形式」：</p>
+    <p>
+      <span class="doc-inline-code">
+        Q(s, a) ← Q(s, a) + α · [ r + γ · max<sub>a'</sub> Q(s', a') − Q(s, a) ]
+      </span>
+    </p>
+    <p>其中：</p>
+    <ul>
+      <li><span class="doc-inline-code">α</span>（alpha）：学习率，控制每次新经验的「话语权」，典型取值 0.1 ~ 0.5；</li>
+      <li><span class="doc-inline-code">γ</span>（gamma）：折扣因子，决定「未来奖励」的重要程度，典型取值 0.9 左右；</li>
+      <li><span class="doc-inline-code">max Q(s', a')</span>：在新状态下能得到的最好 Q 值，用来“预估未来”。</li>
+    </ul>
+    <p class="doc-note">
+      方括号里的项被称为<strong>时序差分误差（TD error）</strong>：
+      预测值和「即时奖励 + 折扣后未来最优值」之间的差距。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>3. 伪代码：一眼看懂流程</h2>
+    <p>简化版的 Q-learning 伪代码如下：</p>
+    <ol>
+      <li>初始化 Q 表：对所有 <span class="doc-inline-code">(s, a)</span> 赋初值（通常为 0）。</li>
+      <li>重复多轮 Episode（每一轮从起点走到终点或超时）：</li>
+    </ol>
+    <ul>
+      <li>重置环境，把智能体放到起点状态 <span class="doc-inline-code">s</span>；</li>
+      <li>在本轮中循环：</li>
+      <ul>
+        <li>根据当前状态 <span class="doc-inline-code">s</span> 和 Q 表，按 ε-贪心策略选择一个动作 <span class="doc-inline-code">a</span>；</li>
+        <li>执行动作，获得奖励 <span class="doc-inline-code">r</span> 和下一状态 <span class="doc-inline-code">s'</span>；</li>
+        <li>用上一节的公式更新 <span class="doc-inline-code">Q(s, a)</span>；</li>
+        <li>把 <span class="doc-inline-code">s ← s'</span>；如果到达终点或超时，则结束本轮。</li>
+      </ul>
+    </ul>
+    <p class="doc-note">
+      ε-贪心策略（epsilon-greedy）会在
+      <a href="help_epsilon.html">《ε-贪心探索策略与衰减》</a> 页面中单独讲。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>4. 在 AI Race 中的具体实现思路</h2>
+    <p>在本项目的迷宫环境里，Q-learning 的各个元素是这样对应的：</p>
+    <ul>
+      <li><strong>状态空间：</strong>前一页中定义的网格世界，每一个可走格子对应一个状态 ID；</li>
+      <li><strong>动作集合：</strong>上 / 下 / 左 / 右四个离散动作；</li>
+      <li><strong>奖励：</strong>由环境中的步长惩罚、撞墙惩罚、终点奖励等组成，具体见
+        <a href="help_rewards.html">奖励函数设计</a> 一节；</li>
+      <li><strong>Q 表结构：</strong>可以用二维数组 <span class="doc-inline-code">Q[state][action]</span> 存储。</li>
+    </ul>
+    <p>一次典型的训练循环大致如下：</p>
+    <ol>
+      <li>根据迷宫尺寸创建 Q 表，全部初始化为 0。</li>
+      <li>外层循环若干 Episode（上千到上万次）。</li>
+      <li>每个 Episode 内：</li>
+    </ol>
+    <ul>
+      <li>重置小球位置，重置环境统计量；</li>
+      <li>在「最多步数」限制内重复：</li>
+      <ul>
+        <li>从当前状态 <span class="doc-inline-code">s</span> 按 ε-贪心选动作 <span class="doc-inline-code">a</span>；</li>
+        <li>调用环境步进函数，得到 <span class="doc-inline-code">s'</span> 和 <span class="doc-inline-code">r</span>；</li>
+        <li>更新 <span class="doc-inline-code">Q(s, a)</span>；</li>
+        <li>如果到达终点或失败终止，则结束本轮。</li>
+      </ul>
+    </ul>
+    <p class="doc-note">
+      在 <strong>RL Demo</strong> 页面里，你可以观察到 Q 值逐渐「收敛」，
+      小球从乱走到基本沿最短路径前进的全过程。
+    </p>
+  </section>
+
+  <section class="doc-section">
+    <h2>5. 超参数调节的小贴士</h2>
+    <p>在实际调参时，可以参考下面的经验：</p>
+    <ul>
+      <li><strong>学习率 α：</strong>太大容易震荡，太小收敛太慢。可以从 0.1 或 0.2 开始尝试。</li>
+      <li><strong>折扣因子 γ：</strong>迷宫类问题希望考虑「未来奖励」，通常取 0.9 左右。</li>
+      <li><strong>Episode 数：</strong>网格越大、奖励设计越复杂，需要的训练轮数就越多。</li>
+      <li><strong>ε 衰减：</strong>前期多探索，后期慢慢减小 ε，有利于稳定策略。</li>
+    </ul>
+    <p class="doc-note">
+      这些参数的选择会直接影响到「学习速度」与「最终效果」，
+      可以在课堂上配合图表展示不同参数下的学习曲线对比。
+    </p>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<!-- 滚动淡入脚本 -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const sections = document.querySelectorAll('.doc-section');
+
+    if (!('IntersectionObserver' in window)) {
+      sections.forEach(s => s.classList.add('is-visible'));
+      return;
+    }
+
+    const obs = new IntersectionObserver((entries, observer) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.2 });
+
+    sections.forEach(sec => obs.observe(sec));
+  });
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+

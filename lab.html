@@ -1,0 +1,231 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI 实验室 · RL 超参数控制台</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <!-- 顶部统一导航，与其他页面保持一致 -->
+  <header>
+    <a href="index.html" class="brand">
+    <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+    <span class="brand-text">AI Race</span>
+  </a>
+    <ul class="nav">
+      <li>
+        <a href="javascript:void(0)"
+           onclick="if (history.length > 1) { history.back(); } else { window.location.href='index.html'; }">
+          ← 返回
+        </a>
+      </li>
+
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+  </header>
+
+  <!--
+    本页 = “RL 实验超参数控制面板”
+    作用：
+      1. 为 Arena 页中的两个 RL 智能体（A/B）设置超参数（学习率、探索率等）
+      2. 参数以 JSON 形式保存在 localStorage('ai_lab_params') 中
+      3. 下次打开 / 刷新 Arena 页时，从这里读取配置并初始化 RL 智能体
+  -->
+  <main class="container">
+    <h1>AI 实验室 · RL 超参数控制台</h1>
+
+    <p style="color:#9db0c6;max-width:720px;">
+      这里用于设置强化学习（Q-learning）智能体在迷宫中的训练超参数。
+      参数会保存到浏览器本地（<code>localStorage('ai_lab_params')</code>），
+      下次刷新 <b>对抗 Arena</b> 页面时，会按这里的配置初始化
+      <b>两个 RL 智能体（A / B）</b>，用于比较谁更快学会最短路径。
+    </p>
+
+    <!--
+      整个表单的 id 仍然叫 trainForm，方便 lab.js 直接选择。
+      所有 input 的 name 会作为 localStorage JSON 的字段名使用。
+    -->
+    <form id="trainForm" novalidate>
+      <!-- 1. 全局训练设置 -->
+      <section style="margin-top:24px;">
+        <h2>① 全局训练设置（两个智能体共享）</h2>
+        <p style="color:#9db0c6;max-width:720px;">
+          这些参数会同时作用在 A / B 两个智能体上，主要控制
+          折扣因子、每局最大步数，以及统计窗口大小。
+          如果不清楚如何调整，保留默认值即可。
+        </p>
+
+        <div style="margin-top:8px;">
+          <label style="display:block;margin-bottom:8px;">
+            折扣因子 γ（0 ~ 0.999，越大越重视远期奖励）<br>
+            <input
+              name="gamma"
+              type="number"
+              step="0.001"
+              min="0"
+              max="0.999"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+
+          <label style="display:block;margin-bottom:8px;">
+            每局最大步数（防止智能体在迷宫里无限乱走）<br>
+            <input
+              name="maxSteps"
+              type="number"
+              min="10"
+              max="5000"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+
+          <label style="display:block;margin-bottom:8px;">
+            最近统计窗口大小（N 局，用于计算平均奖励和成功率）<br>
+            <input
+              name="recentWindow"
+              type="number"
+              min="10"
+              max="500"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+        </div>
+      </section>
+
+      <!-- 2. 智能体 A 的超参数 -->
+      <section style="margin-top:24px;">
+        <h2>② 智能体 A 超参数（偏激进探索）</h2>
+        <p style="color:#9db0c6;max-width:720px;">
+          A 一般设置成“学习率稍大、探索更激进”的策略，
+          看看它能否更快学到最短路径。
+        </p>
+
+        <div style="margin-top:8px;">
+          <label style="display:block;margin-bottom:8px;">
+            学习率 α<sub>A</sub>（0 ~ 1，越大越“敢于覆盖旧经验”）<br>
+            <input
+              name="alphaA"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+
+          <label style="display:block;margin-bottom:8px;">
+            初始探索率 ε<sub>0,A</sub>（0 ~ 1，1 表示完全随机）<br>
+            <input
+              name="epsilonStartA"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+
+          <label style="display:block;margin-bottom:8px;">
+            探索率衰减因子 decay<sub>A</sub>（0.8 ~ 0.9999，越接近 1 衰减越慢）<br>
+            <input
+              name="epsilonDecayA"
+              type="number"
+              step="0.0005"
+              min="0.8"
+              max="0.9999"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+        </div>
+      </section>
+
+      <!-- 3. 智能体 B 的超参数 -->
+      <section style="margin-top:24px;">
+        <h2>③ 智能体 B 超参数（偏稳健的策略）</h2>
+        <p style="color:#9db0c6;max-width:720px;">
+          B 一般设置成“学习率稍小、探索更保守”的策略，
+          用来观察激进 vs 稳妥哪一种在最终表现上更好。
+        </p>
+
+        <div style="margin-top:8px;">
+          <label style="display:block;margin-bottom:8px;">
+            学习率 α<sub>B</sub>（0 ~ 1）<br>
+            <input
+              name="alphaB"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+
+          <label style="display:block;margin-bottom:8px;">
+            初始探索率 ε<sub>0,B</sub>（0 ~ 1）<br>
+            <input
+              name="epsilonStartB"
+              type="number"
+              step="0.01"
+              min="0"
+              max="1"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+
+          <label style="display:block;margin-bottom:8px;">
+            探索率衰减因子 decay<sub>B</sub>（0.8 ~ 0.9999）<br>
+            <input
+              name="epsilonDecayB"
+              type="number"
+              step="0.0005"
+              min="0.8"
+              max="0.9999"
+              required
+              style="width:160px;margin-top:4px;"
+            >
+          </label>
+        </div>
+      </section>
+
+      <!-- 提交按钮 + 提示 -->
+      <section style="margin-top:24px;">
+        <button type="submit">保存超参数到本地浏览器</button>
+        <p id="saveHint" style="color:#9db0c6;margin-top:10px;">
+          尚未保存。修改参数后点击上面的按钮进行保存。
+        </p>
+        <p style="color:#9db0c6;font-size:0.9em;max-width:720px;">
+          ⚠️ 提示：保存完成后，需要刷新一次
+          <b>对抗 Arena</b> 页面，新的超参数才会在 RL 智能体初始化时生效。
+        </p>
+      </section>
+    </form>
+  </main>
+
+  <footer class="footer">© 2025 AI Race Demo</footer>
+
+  <!-- lab.js：负责表单校验 + 读写 localStorage('ai_lab_params') -->
+  <script type="module" src="/src/lab.js"></script>
+</body>
+</html>
+
+
+

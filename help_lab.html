@@ -1,0 +1,581 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI 实验室参数说明 · AI Race</title>
+  <link rel="stylesheet" href="/src/style.css"/>
+
+  <style>
+    /* 统一本组文档的导航样式（与 NavMesh 系列不同配色） */
+    .guide-header {
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      background: rgba(14, 18, 28, 0.96);
+      border-bottom: 1px solid #1f2a3a;
+      backdrop-filter: blur(10px);
+      margin-bottom: 12px;
+    }
+    .guide-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 10px 18px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 14px;
+    }
+    .guide-header .nav { flex-wrap: wrap; justify-content: center; }
+    .guide-header .nav > li { padding-bottom: 6px; }
+    .guide-header .nav > li > a { padding: 8px 12px; }
+    .back-btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #2c3342;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(14, 165, 233, 0.25));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .back-btn:hover { background: rgba(59, 130, 246, 0.25); border-color: #60a5fa; }
+    main.doc-page{
+      max-width: 960px;
+      margin:24px auto 40px;
+      padding:0 16px 40px;
+    }
+
+    .doc-hero,
+    .doc-section{
+      position:relative;
+      margin-top:24px;
+      padding:20px 20px 22px;
+      border-radius:18px;
+      border:1px solid #1c2533;
+      background:radial-gradient(circle at top left,
+                  rgba(59,130,246,0.14), rgba(15,23,42,1) 55%);
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(22px);
+      transition:
+        opacity .65s ease-out,
+        transform .65s ease-out,
+        box-shadow .65s ease-out,
+        border-color .65s ease-out,
+        background 1s ease-out;
+    }
+    .doc-hero::before,
+    .doc-section::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:linear-gradient(120deg,
+                  rgba(56,189,248,0.0),
+                  rgba(56,189,248,0.32),
+                  rgba(236,72,153,0.0));
+      transform:translateX(-45%);
+      opacity:0;
+      transition:
+        transform 1.1s ease-out,
+        opacity 1.1s ease-out;
+      pointer-events:none;
+    }
+    .doc-visible{
+      opacity:1;
+      transform:none;
+      box-shadow:0 26px 70px rgba(0,0,0,.55);
+      border-color:rgba(56,189,248,.7);
+      background:radial-gradient(circle at top left,
+                  rgba(56,189,248,0.18), rgba(15,23,42,1) 60%);
+    }
+    .doc-visible::before{
+      transform:translateX(0);
+      opacity:1;
+    }
+
+    .doc-hero h1{
+      margin:0 0 8px;
+      font-size:26px;
+      letter-spacing:.03em;
+    }
+    .doc-hero p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:13px;
+      max-width:520px;
+    }
+
+    .doc-section h2{
+      margin:0 0 8px;
+      font-size:20px;
+    }
+    .doc-section h3{
+      margin:14px 0 4px;
+      font-size:15px;
+    }
+    .doc-section p{
+      margin:4px 0 8px;
+      font-size:14px;
+      line-height:1.65;
+      color:var(--muted);
+    }
+    .doc-section ul{
+      margin:6px 0 8px 1.1em;
+      padding:0;
+      font-size:14px;
+      color:var(--muted);
+    }
+    .doc-section li{margin:2px 0;}
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:2px 9px;
+      border-radius:999px;
+      border:1px solid rgba(148,163,184,.4);
+      background:rgba(15,23,42,.9);
+      font-size:11px;
+      color:var(--muted);
+    }
+    .pill strong{color:#e5f3ff;font-size:11px;}
+    code{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:12px;
+      background:#020617;
+      padding:1px 4px;
+      border-radius:4px;
+      border:1px solid #1f2937;
+    }
+    .inline-math{
+      font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:12px;
+    }
+    .two-col{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(0, min(100%, 420px)));
+      gap:14px 22px;
+      margin-top:10px;
+    }
+    .param-card{
+      padding:10px 12px;
+      border-radius:10px;
+      border:1px solid #1f2937;
+      background:rgba(15,23,42,.9);
+    }
+    .param-card h3{margin-top:0;}
+  </style>
+
+  <!-- 统一外观：共享文档样式（覆盖上方旧样式以保持一致） -->
+  <style>
+    :root{
+      --doc-accent: #5ac8fa;
+      --doc-accent-2: #22d3ee;
+      --doc-border: #1c2533;
+      --doc-bg: #0e1320;
+      --doc-muted: #9db0c6;
+    }
+    main.doc-page{
+      max-width: 960px;
+      margin:24px auto 40px;
+      padding:0 16px 40px;
+    }
+    .guide-header {
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      background: rgba(14, 18, 28, 0.96);
+      border-bottom: 1px solid #1f2a3a;
+      backdrop-filter: blur(10px);
+      margin-bottom: 12px;
+    }
+    .guide-header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 10px 18px;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 14px;
+    }
+    .guide-header .nav { flex-wrap: wrap; justify-content: center; }
+    .guide-header .nav > li { padding-bottom: 6px; }
+    .guide-header .nav > li > a { padding: 8px 12px; }
+    .back-btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #2c3342;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(14, 165, 233, 0.25));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 12px;
+      white-space: nowrap;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .back-btn:hover { background: rgba(59, 130, 246, 0.25); border-color: #60a5fa; }
+
+    .doc-hero,
+    .doc-section{
+      position:relative;
+      margin-top:24px;
+      padding:20px 20px 22px;
+      border-radius:18px;
+      border:1px solid var(--doc-border);
+      background:radial-gradient(circle at 12% 0%,
+                  color-mix(in srgb, var(--doc-accent) 26%, transparent),
+                  var(--doc-bg) 62%);
+      overflow:hidden;
+      opacity:0;
+      transform:translateY(22px);
+      transition:
+        opacity .65s ease-out,
+        transform .65s ease-out,
+        box-shadow .65s ease-out,
+        border-color .65s ease-out,
+        background 1s ease-out;
+    }
+    .doc-hero::before,
+    .doc-section::before{
+      content:"";
+      position:absolute;
+      inset:-1px;
+      background:linear-gradient(120deg,
+                  color-mix(in srgb, var(--doc-accent) 0%, transparent),
+                  color-mix(in srgb, var(--doc-accent-2) 38%, transparent),
+                  color-mix(in srgb, var(--doc-accent) 0%, transparent));
+      transform:translateX(-45%);
+      opacity:0;
+      transition:
+        transform 1.1s ease-out,
+        opacity 1.1s ease-out;
+      pointer-events:none;
+    }
+    .doc-visible{
+      opacity:1;
+      transform:none;
+      box-shadow:0 26px 70px rgba(0,0,0,.55);
+      border-color:color-mix(in srgb, var(--doc-accent) 60%, #1f2a3a 40%);
+      background:radial-gradient(circle at 14% 0%,
+                  color-mix(in srgb, var(--doc-accent-2) 24%, transparent),
+                  var(--doc-bg) 68%);
+    }
+    .doc-visible::before{
+      transform:translateX(0);
+      opacity:1;
+    }
+
+    .doc-hero h1{
+      margin:0 0 8px;
+      font-size:26px;
+      letter-spacing:.02em;
+    }
+    .doc-hero p{
+      margin:4px 0 0;
+      color:var(--doc-muted);
+      font-size:13px;
+      max-width:520px;
+    }
+
+    .doc-section h2{
+      margin:0 0 8px;
+      font-size:20px;
+    }
+    .doc-section h3{
+      margin:14px 0 4px;
+      font-size:15px;
+    }
+    .doc-section p{
+      margin:4px 0 8px;
+      font-size:14px;
+      line-height:1.65;
+      color:var(--doc-muted);
+    }
+    .doc-section ul{
+      margin:6px 0 8px 1.1em;
+      padding:0;
+      font-size:14px;
+      color:var(--doc-muted);
+    }
+    .doc-section li{
+      margin:2px 0;
+    }
+  </style>
+
+  <!-- 返回按钮统一样式（与文档主题色呼应） -->
+  <style>
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid color-mix(in srgb, var(--doc-accent, #38bdf8) 55%, #1f2937 45%);
+      background: linear-gradient(120deg, var(--doc-accent, #38bdf8), var(--doc-accent-2, #a855f7));
+      color: #e5e7eb;
+      cursor: pointer;
+      font-size: 13px;
+      letter-spacing: 0.1px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.35);
+      transition: transform .15s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    .back-btn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 16px 34px rgba(0,0,0,0.4);
+    }
+    .back-btn:active{
+      transform: translateY(0);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.32);
+    }
+  </style>
+</head>
+<body>
+<header class="guide-header">
+  <div class="guide-header-inner">
+    <a href="index.html" class="brand">
+      <img src="/log.svg" alt="AI Race logo" class="brand-logo">
+      <span class="brand-text">AI Race</span>
+    </a>
+    <ul class="nav">
+      <li><a href="editor.html">编辑器</a></li>
+      <li><a href="lab.html">AI 实验室</a></li>
+      <li><a href="dashboard.html">训练看板</a></li>
+      <li><a href="arena.html">对抗 Arena</a></li>
+      <li>
+        <a href="#">更多 ▾</a>
+        <div class="dropdown">
+          <a href="help.html">帮助/原理</a>
+          <a href="about.html">关于</a>
+        </div>
+      </li>
+    </ul>
+    <button class="back-btn" onclick="if (history.length > 1) history.back(); else location.href='index.html'">返回</button>
+  </div>
+</header>
+
+<main class="doc-page">
+  <!-- 顶部简介 -->
+  <section class="doc-hero">
+    <span class="pill"><strong>Lab</strong><span>Q-learning 参数控制台</span></span>
+    <h1>AI 实验室参数说明</h1>
+    <p>
+      本页对应 <code>lab.html</code> 与 <code>lab.js</code>，逐项解释
+      Q-learning 的核心超参数：<span class="inline-math">α / γ / ε</span>、
+      每局最大步数与最近窗口大小等，以及它们如何影响 Arena 中双智能体的训练表现。
+    </p>
+  </section>
+
+  <!-- 1. 全局参数 -->
+  <section class="doc-section">
+    <h2>① 全局参数：折扣因子 γ、最大步数与统计窗口</h2>
+    <p>
+      这些参数在 Lab 页面顶部的「全局设置」里，保存后会被
+      <code>arena_train.js</code> 读取，传给
+      <code>arena_rl_core.js</code> 中的 <code>createRlAgent</code>。
+    </p>
+
+    <div class="two-col">
+      <div class="param-card">
+        <h3>折扣因子 γ（<code>gamma</code>）</h3>
+        <p>
+          取值范围通常在 <code>[0, 1)</code>。它控制智能体对未来奖励的重视程度：
+        </p>
+        <ul>
+          <li><b>γ 接近 0</b>：只在意当前奖励，偏「短视」。</li>
+          <li><b>γ 接近 1</b>：未来奖励几乎不打折，更鼓励长远规划。</li>
+        </ul>
+        <p>
+          理论上，我们在每一局中希望最大化折扣回报：
+          <span class="inline-math">
+            G<sub>t</sub> = r<sub>t</sub> + γ r<sub>t+1</sub> + γ² r<sub>t+2</sub> + ⋯
+          </span>
+        </p>
+        <p>
+          在迷宫任务里，<b>γ 稍微偏大</b>（如 0.95）可以鼓励智能体为了到达终点而多探索几步；
+          γ 太大会使学习更慢、对远期奖励过度敏感。
+        </p>
+      </div>
+
+      <div class="param-card">
+        <h3>单局最大步数（<code>maxSteps</code>）</h3>
+        <p>
+          限制一局内允许的最大步数，防止智能体在复杂迷宫中无限乱逛。
+        </p>
+        <ul>
+          <li>若在 <code>maxSteps</code> 步内没有到达终点，则判定为失败。</li>
+          <li>
+            该值越大，单局探索越充分，但训练一局的时间也变长；
+            过小会导致许多局还没来得及找到出口就被强制结束。
+          </li>
+        </ul>
+        <p>
+          建议：从迷宫理论最短步数的 <b>3–6 倍</b>起步，根据训练情况再微调。
+        </p>
+      </div>
+
+      <div class="param-card">
+        <h3>最近窗口大小（<code>recentWindow</code>）</h3>
+        <p>
+          用于统计「最近 N 局」的平均奖励、平均步数和成功率，在
+          <code>arena_rl_core.js</code> 里通过一个滑动窗口维护：
+        </p>
+        <ul>
+          <li>值越大，统计越平滑、对单次波动不敏感。</li>
+          <li>值越小，可以更快反映最新策略变化，但曲线会更抖。</li>
+        </ul>
+        <p>
+          Arena 右侧 RL 面板和 Dashboard 里的折线图，都使用这个窗口来计算「最近表现」。
+        </p>
+      </div>
+
+      <div class="param-card">
+        <h3>Episode 的概念</h3>
+        <p>
+          虽然 Episode 数量并不直接在 Lab 表单中设置，但在 Arena 中，每次从起点出发到
+          「到达终点 / 用完步数」都视为一局 Episode。
+        </p>
+        <p>
+          Lab 的参数会影响每一局中的状态价值更新和探索方式，
+          Arena 再以 episode 级别统计训练过程并写入
+          <code>localStorage('arena_rl_dual_stats')</code>，供 Dashboard 展示。
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. 智能体 A 的超参数 -->
+  <section class="doc-section">
+    <h2>② 智能体 A（紫色）超参数</h2>
+    <p>
+      智能体 A 在 Arena 中以紫色显示，其参数字段对应
+      <code>alphaA</code>、<code>epsilonStartA</code>、<code>epsilonDecayA</code>。
+      保存后会被组装成传给 <code>createRlAgent</code> 的配置：
+      <code>{ alpha, gamma, epsilonStart, epsilonDecay, ... }</code>。
+    </p>
+
+    <h3>学习率 α<sub>A</sub>（<code>alphaA</code>）</h3>
+    <p>
+      学习率控制每次 TD 更新时「新信息」覆盖「旧估计」的速度。Q-learning 更新可写为：
+    </p>
+    <p class="inline-math">
+      Q(s,a) ← Q(s,a) + α · [ r + γ max<sub>a′</sub> Q(s′,a′) − Q(s,a) ]
+    </p>
+    <ul>
+      <li>α 太大：更新剧烈，收敛不稳定，可能在 Q 值附近来回震荡。</li>
+      <li>α 太小：更新过慢，需要大量 Episode 才能学到可用策略。</li>
+    </ul>
+    <p>
+      在迷宫任务中，常用范围为 <code>0.05 ~ 0.3</code>，可以让 A 和 B 使用不同 α，
+      在 Dashboard 对比谁收敛更快。
+    </p>
+
+    <h3>初始探索率 ε<sub>0,A</sub>（<code>epsilonStartA</code>）</h3>
+    <p>
+      在 <b>ε-贪心策略</b> 中，智能体以概率 ε 随机探索，以概率 <code>1 − ε</code>
+      选择当前 Q 值最大的动作：
+    </p>
+    <ul>
+      <li>ε 初值接近 1：前期更多随机尝试，有利于发现新路径。</li>
+      <li>ε 初值过小：很快陷入早期的「局部最优」，不够探索。</li>
+    </ul>
+    <p>
+      通常可以从 <code>0.8 ~ 1.0</code> 起步，让智能体先大胆乱走，再逐渐收敛。
+    </p>
+
+    <h3>衰减系数 ε<sub>decay,A</sub>（<code>epsilonDecayA</code>）</h3>
+    <p>
+      在 <code>arena_rl_core.js</code> 中，每完成一局 Episode 后会更新：
+    </p>
+    <p class="inline-math">
+      ε ← max(ε<sub>min</sub>, ε · ε<sub>decay</sub>)
+    </p>
+    <p>
+      即乘以一个略小于 1 的系数（例如 0.995），并强制不低于
+      <code>epsilonMin</code>。含义：
+    </p>
+    <ul>
+      <li>衰减系数越接近 1：探索期更长，收敛更慢但更稳健。</li>
+      <li>衰减系数较小：很快降低 ε，尽早「利用」已有策略。</li>
+    </ul>
+    <p>
+      你可以在 Arena 中把 A 设置为「探索更久」（较大 ε<sub>decay</sub>），
+      对比 B 的「激进收敛」策略。
+    </p>
+  </section>
+
+  <!-- 3. 智能体 B 参数 -->
+  <section class="doc-section">
+    <h2>③ 智能体 B（绿色）超参数</h2>
+    <p>
+      智能体 B 的字段为 <code>alphaB</code>、<code>epsilonStartB</code>、
+      <code>epsilonDecayB</code>，含义与 A 完全相同，只是默认值可以不同。
+    </p>
+    <p>
+      推荐的使用方式是：<b>故意让 A/B 参数不一致</b>，例如：
+    </p>
+    <ul>
+      <li>A：较大学习率 + 较快 ε 衰减，类似「急性子选手」。</li>
+      <li>B：较小学习率 + 较慢 ε 衰减，更谨慎、长期探索。</li>
+    </ul>
+    <p>
+      然后在 Arena / Dashboard 中观察：
+    </p>
+    <ul>
+      <li>谁先达到「最近 100 局成功率 ≈ 100%」。</li>
+      <li>在稳定阶段谁的「平均步数 / 最短步数」更接近 1。</li>
+    </ul>
+  </section>
+
+  <!-- 4. 参数与 Arena / Dashboard 的联动 -->
+  <section class="doc-section">
+    <h2>④ 与 Arena / Dashboard 的联动关系</h2>
+    <p>
+      Lab 页面本身并不启动训练，它更像是一个「配置面板」：
+    </p>
+    <ul>
+      <li>
+        点击保存后，<code>lab.js</code> 会把表单内容写入
+        <code>localStorage('ai_lab_params')</code>。
+      </li>
+      <li>
+        <code>arena_train.js</code> 在创建 RL 智能体时，从该 key 读取超参数，
+        创建两个 <code>createRlAgent(...)</code> 实例。
+      </li>
+      <li>
+        训练过程中，Arena 会周期性把统计快照写入
+        <code>localStorage('arena_rl_dual_stats')</code>，
+        <code>dashboard.js</code> 再把它们画成折线图。
+      </li>
+    </ul>
+    <p>
+      因此：<b>调整 Lab 参数 → 打开 Arena 训练一段时间 → 再到 Dashboard 观测曲线</b>，
+      就形成了一个完整的「调参–训练–评估」闭环。
+    </p>
+  </section>
+</main>
+
+<footer class="footer">© 2025 AI Race Demo</footer>
+
+<script>
+  // 滚动出现渐变高亮的动画
+  document.addEventListener('DOMContentLoaded', () => {
+    const els = document.querySelectorAll('.doc-hero, .doc-section')
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('doc-visible')
+          io.unobserve(e.target)
+        }
+      })
+    }, { threshold: 0.18 })
+
+    els.forEach(el => io.observe(el))
+  })
+</script>
+</body>
+</html>
+
+
+
+

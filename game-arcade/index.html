@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>经典街机合集</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="arcade-brand">
+    <div class="brand-left">
+      <img src="/log.svg" alt="AI Race logo">
+      <div>
+        <div class="brand-title">AI Race Arcade</div>
+        <div class="brand-subtitle">小游戏 · 彩蛋 · 放松一刻</div>
+      </div>
+    </div>
+    <a class="exit-home" href="/index.html" title="返回主站">← 返回首页</a>
+  </div>
+
+  <main id="lobby">
+    <header>
+      <h1>经典街机合集</h1>
+      <p>选择一个小游戏开始</p>
+    </header>
+    <div class="game-menu">
+      <button class="game-btn" data-game="snake">🐍 贪吃蛇</button>
+      <button class="game-btn" data-game="tetris">🧱 俄罗斯方块</button>
+      <button class="game-btn" data-game="sudoku">🔢 数独</button>
+      <button class="game-btn" data-game="minesweeper">💣 扫雷</button>
+    </div>
+  </main>
+
+  <section id="game-snake" class="game-container">
+    <div class="game-header">
+      <h2>🐍 贪吃蛇</h2>
+      <button class="back-btn">返回大厅</button>
+    </div>
+    <div class="game-ui">
+      <span>得分：<span id="snake-score">0</span></span>
+    </div>
+    <canvas id="snake-canvas" width="400" height="400"></canvas>
+  </section>
+
+  <section id="game-tetris" class="game-container">
+    <div class="game-header">
+      <h2>🧱 俄罗斯方块</h2>
+      <button class="back-btn">返回大厅</button>
+    </div>
+    
+    <div id="tetris-message" class="game-message" style="display: none;"></div>
+    
+    <div class="tetris-layout">
+      <canvas id="tetris-canvas" width="200" height="400"></canvas>
+      <div class="tetris-sidebar">
+        <div>
+          <h4>得分</h4>
+          <p id="tetris-score">0</p>
+        </div>
+        <div>
+          <h4>行数</h4>
+          <p id="tetris-lines">0</p>
+        </div>
+        <div>
+          <h4>下一个</h4>
+          <canvas id="next-piece-canvas" width="80" height="80"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="game-sudoku" class="game-container">
+    <div class="game-header">
+      <h2>🔢 数独</h2>
+      <button class="back-btn">返回大厅</button>
+    </div>
+    
+    <div class="sudoku-controls">
+      <button id="sudoku-new-game">新游戏</button>
+    </div>
+    
+    <div id="sudoku-message" class="game-message" style="display: none;"></div>
+    
+    <div id="sudoku-board">
+      </div>
+  </section>
+
+  <section id="game-minesweeper" class="game-container">
+    <div class="game-header">
+      <h2>💣 扫雷</h2>
+      <button class="back-btn">返回大厅</button>
+    </div>
+    <div class="minesweeper-controls">
+      剩余地雷：<span id="mines-left">10</span>
+    </div>
+    <div id="minesweeper-message" class="game-message"></div>
+    
+    <div id="minesweeper-board">
+      </div>
+  </section>
+
+  <script src="js/snake.js"></script>
+  <script src="js/tetris.js"></script>
+  <script src="js/sudoku.js"></script>
+  <script src="js/minesweeper.js"></script>
+  
+  <script src="main.js"></script>
+</body>
+</html>
