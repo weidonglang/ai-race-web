@@ -103,9 +103,9 @@ It covers the full pipeline from **NavMesh generation** and **path planning** to
 
 ---
 
-## 📁 Project Structure | 项目结构（示意）
+## 📁 Project Structure | 项目结构
 
-根据你当前代码，大致结构如下（可按实际仓库微调）：
+大致结构如下：
 
 ```text
 .
