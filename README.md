@@ -197,11 +197,6 @@ npm run build
    * 用 Chart.js 绘制成功率 / 平均步数 / ε 曲线
    * 文本区域给出“谁学得更快”、“谁走得更近似最短路径”等结论
 
-4. **NavMesh Editor 与 Arena 的关系（可扩展）**
-
-   * 当前版本中 Editor 侧重展示 NavMesh 编辑与 3D 路径规划；
-   * Arena 使用自己的迷宫网格描述 + Q-learning；
-   * 后续可以扩展为：从 Editor 导出路径 / 网格配置，导入 Arena 作为训练地图。
 
 ---
 
